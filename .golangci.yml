@@ -1,0 +1,56 @@
+run:
+  timeout: 5m
+  go: "1.21"
+
+linters:
+  enable:
+    - errcheck        # check for unhandled errors
+    - govet           # go vet checks
+    - staticcheck     # comprehensive static analysis
+    - unused          # detect unused code
+    - gofmt           # formatting
+    - goimports       # import grouping/sorting
+    - gosimple        # simplification suggestions
+    - ineffassign     # detect ineffectual assignments
+    - typecheck       # type checking (mirrors go build)
+    - misspell        # spelling mistakes in comments
+    - godot           # godoc comment style (end with period)
+    - noctx           # detect http.NewRequest without context
+    - bodyclose       # check http response body is closed
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow  # too noisy
+
+  goimports:
+    local-prefixes: github.com/example/cfgx
+
+  staticcheck:
+    go: "1.21"
+
+issues:
+  exclude-rules:
+    # Test files: allow some patterns that are fine in tests
+    - path: "_test\\.go"
+      linters:
+        - errcheck
+        - godot
+
+    # Generated files: skip linting
+    - path: "config\\.gen\\.go"
+      linters:
+        - all
+
+    # doc.go files: godot can be noisy
+    - path: "doc\\.go"
+      linters:
+        - godot
+
+  max-issues-per-linter: 50
+  max-same-issues: 10

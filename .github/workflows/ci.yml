@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.21", "1.22", "1.23"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+      - name: Download dependencies
+        run: go mod download
+      - name: Build
+        run: go build ./...
+      - name: Test (with race detector)
+        run: go test -race -count=1 -timeout=120s ./...
+      - name: Test coverage
+        if: matrix.go == '1.21'
+        run: go test -count=1 -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        if: matrix.go == '1.21'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+      - name: Install cfgx
+        run: go install ./cmd/cfgx
+      - name: Run e2e tests
+        run: go test -tags e2e -race -count=1 -timeout=120s ./_test/e2e/...
+
+  golden-files:
+    name: Check golden files are up to date
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+      - name: Run golden file update
+        run: go test ./gen/... -update
+      - name: Check for diffs
+        run: |
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "Golden files are out of date. Run 'go test ./gen/... -update' and commit."
+            git diff
+            exit 1
+          fi
+
+  example:
+    name: Build example project
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+      - name: Install cfgx
+        run: go install ./cmd/cfgx
+      - name: Regenerate example
+        run: go generate ./examples/webapp/cmd/...
+      - name: Build example
+        run: cd examples/webapp && go build ./...
+      - name: Check no cfgx/viper in pkg/
+        run: |
+          if grep -r "github.com/example/cfgx\|github.com/spf13/viper" examples/webapp/pkg/; then
+            echo "ERROR: business logic packages must not import cfgx or viper"
+            exit 1
+          fi
