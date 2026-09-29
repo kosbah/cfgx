@@ -304,3 +304,12 @@ func TestListDefaultRejectsNonSlice(t *testing.T) {
 	}()
 	List("l", String("s")).Default("nope")
 }
+
+func TestListAcceptsSpaceAndCommaSeparatedStrings(t *testing.T) {
+	s := Define(List("hosts", String("h").Validate(URL())))
+	for _, raw := range []string{"http://a http://b", "http://a,http://b", "http://a, http://b"} {
+		if err := s.Validate(mapSource{"hosts": raw}); err != nil {
+			t.Errorf("Validate(%q) = %v, want nil", raw, err)
+		}
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/example/cfgx/internal/ir"
 )
@@ -98,19 +99,18 @@ func Like(sample, raw any) (any, error) {
 }
 
 // ToList converts a source value to []any. Slices and arrays are copied
-// element-wise; a string is split on commas with surrounding space trimmed.
+// element-wise; a string is split on commas and whitespace, dropping empty parts.
 func ToList(raw any) ([]any, error) {
 	if raw == nil {
 		return nil, nil
 	}
 	if s, ok := raw.(string); ok {
-		if strings.TrimSpace(s) == "" {
-			return []any{}, nil
-		}
-		parts := strings.Split(s, ",")
+		// Split on commas and whitespace, so both "a,b" and viper's
+		// space-separated env form "a b" (as written in .env.example) work.
+		parts := strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
 		out := make([]any, len(parts))
 		for i, p := range parts {
-			out[i] = strings.TrimSpace(p)
+			out[i] = p
 		}
 		return out, nil
 	}
