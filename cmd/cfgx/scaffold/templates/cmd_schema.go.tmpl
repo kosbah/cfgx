@@ -1,0 +1,68 @@
+package cmd
+
+//go:generate cfgx gen
+
+import (
+	"github.com/example/cfgx"
+)
+
+// Schema declares every configuration value of {{.AppName}}.
+//
+// This file is the single source of truth. After editing it, run
+//
+//	go generate ./cmd/...
+//
+// to regenerate cmd/config.gen.go (typed config structs, RegisterFlags,
+// BindViper, LoadServe, LoadMigrate) and the .env.example,
+// config.example.yaml, config.schema.json and docs/ files.
+//
+// Adding an entry:
+//
+//   - Pick a constructor: cfgx.String, cfgx.Int, cfgx.Bool, cfgx.Float64,
+//     cfgx.Duration, cfgx.List or cfgx.Object (a nested group).
+//   - Chain builders: .Flag("--name", "-n") adds a CLI flag, .Env("APP_NAME")
+//     binds an environment variable, .Default(v) sets the default,
+//     .Required(), .Sensitive() (redacted everywhere), .Desc("..."),
+//     .Validate(cfgx.PortRange(1024, 65535)) and the other built-in
+//     validators, .IsLive() (hot-reloaded while running),
+//     .Scope("serve") (only in the serve command's config) and .Tags("...")
+//     (groups entries in the docs).
+//   - Entries without Scope are shared by all commands and live on Config;
+//     scoped entries live on ServeConfig / MigrateConfig.
+//
+// Values are read, highest priority first, from flags, environment variables,
+// the --config file and the defaults below.
+var Schema = cfgx.Define(
+	// A global setting: available to every command as cfg.Debug(). IsLive
+	// makes it hot-reloadable, e.g. by changing APP_DEBUG while running.
+	cfgx.Bool("debug").
+		Flag("--debug").Env("APP_DEBUG").Default(false).
+		IsLive().
+		Desc("Enable debug logging").
+		Tags("general"),
+
+	// A setting only the serve command needs: cfg.Port() on ServeConfig.
+	cfgx.Int("port").
+		Flag("--port", "-p").Env("APP_PORT").Default(8080).
+		Validate(cfgx.PortRange(1024, 65535)).
+		Desc("HTTP port the server listens on").
+		Scope("serve").Tags("server"),
+
+	// A nested object shared by serve and migrate: cfg.Db().Host(), ...
+	// Nested keys are dotted in config files (db.host) and have their own
+	// env vars.
+	cfgx.Object("db",
+		cfgx.String("host").Env("DB_HOST").Default("localhost").
+			Desc("Database host"),
+		cfgx.Int("port").Env("DB_PORT").Default(5432).
+			Validate(cfgx.Port()).
+			Desc("Database port"),
+		cfgx.String("name").Env("DB_NAME").Default("{{.AppName}}").
+			Desc("Database name"),
+		// Sensitive values are never printed, logged or written to docs.
+		// Add .Required() to make startup fail when it is not set.
+		cfgx.String("password").Env("DB_PASSWORD").Sensitive().
+			Desc("Database password"),
+	).Desc("Database connection settings").
+		Scope("serve", "migrate").Tags("database"),
+)

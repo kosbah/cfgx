@@ -1,0 +1,54 @@
+// Package cmd holds the {{.AppName}} commands and their configuration.
+//
+// The configuration is declared once in schema.go; `go generate ./cmd/...`
+// (or `cfgx gen`) turns it into config.gen.go, which provides RegisterFlags,
+// BindViper and one typed Load function per command (LoadServe, LoadMigrate).
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+// cfgFile is the path given with --config.
+var cfgFile string
+
+// NewRootCmd returns the {{.AppName}} root command with all subcommands.
+func NewRootCmd() *cobra.Command {
+	root := &cobra.Command{
+		Use:           "{{.AppName}}",
+		Short:         "{{.AppName}} is a cobra/viper application configured with cfgx",
+		SilenceUsage:  true,
+		SilenceErrors: false,
+	}
+	root.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (YAML, JSON or TOML)")
+
+	// RegisterFlags (generated) adds a flag for every schema entry that
+	// declares one; BindViper binds those flags, env vars and defaults.
+	RegisterFlags(root, Schema)
+	cobra.OnInitialize(initConfig)
+
+	// Each command loads its own typed config in RunE, e.g. the serve command
+	// calls LoadServe(Schema, viper.GetViper()) and gets a *ServeConfig.
+	//
+	// Business logic packages define their own Config interfaces (for example
+	// `type Config interface { Port() int }` in pkg/server); the generated
+	// *ServeConfig satisfies them structurally, so those packages never import
+	// cfgx or viper.
+	root.AddCommand(newServeCmd(), newMigrateCmd())
+	return root
+}
+
+// initConfig reads the config file (if any) and binds the environment.
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+		if err := viper.ReadInConfig(); err != nil {
+			cobra.CheckErr(fmt.Errorf("reading config file: %w", err))
+		}
+	}
+	viper.AutomaticEnv()
+	BindViper(viper.GetViper(), Schema)
+}

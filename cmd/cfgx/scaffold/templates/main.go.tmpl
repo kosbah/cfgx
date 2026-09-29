@@ -1,0 +1,14 @@
+// Command {{.AppName}} is a cobra/viper application configured with cfgx.
+package main
+
+import (
+	"os"
+
+	"{{.ModulePath}}/cmd"
+)
+
+func main() {
+	if err := cmd.NewRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}

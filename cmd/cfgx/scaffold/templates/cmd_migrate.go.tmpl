@@ -1,0 +1,27 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+func newMigrateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "migrate",
+		Short: "Run database migrations",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg, err := LoadMigrate(Schema, viper.GetViper())
+			if err != nil {
+				return err
+			}
+			defer cfg.Close()
+
+			// Replace this with your migration logic.
+			fmt.Fprintf(cmd.OutOrStdout(), "migrating %s:%d/%s\n",
+				cfg.Db().Host(), cfg.Db().Port(), cfg.Db().Name())
+			return nil
+		},
+	}
+}

@@ -1,0 +1,30 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+func newServeCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "serve",
+		Short: "Start the server",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// LoadServe validates every value against Schema and returns a
+			// *cfgx.ValidationErrors listing each problem with its field path.
+			cfg, err := LoadServe(Schema, viper.GetViper())
+			if err != nil {
+				return err
+			}
+			defer cfg.Close() // stops the watcher that keeps IsLive values current
+
+			// Replace this with a call into your business logic, e.g.
+			// server.Run(cfg), where server.Config is an interface.
+			fmt.Fprintf(cmd.OutOrStdout(), "serving on :%d (debug=%t, db=%s:%d/%s)\n",
+				cfg.Port(), cfg.Debug(), cfg.Db().Host(), cfg.Db().Port(), cfg.Db().Name())
+			return nil
+		},
+	}
+}
