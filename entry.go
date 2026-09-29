@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/example/cfgx/internal/convert"
 	"github.com/example/cfgx/internal/ir"
 )
 
@@ -288,7 +289,7 @@ func (f *Field[T]) value(vc *validation, path string) (val T, set bool, err erro
 	if !vc.src.IsSet(path) {
 		return val, false, nil
 	}
-	v, cerr := convertScalar[T](vc.src.Get(path))
+	v, cerr := convert.To[T](vc.src.Get(path))
 	if cerr != nil {
 		if f.sensitive {
 			// Do not echo the source value of a secret.
@@ -332,7 +333,7 @@ func (f *Field[T]) check(vc *validation, path string, val T) {
 }
 
 func (f *Field[T]) convertAny(raw any) (any, error) {
-	v, err := convertScalar[T](raw)
+	v, err := convert.To[T](raw)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", f.typ, err)
 	}
@@ -357,8 +358,8 @@ func (f *Field[T]) watch(path string, out *[]WatchEntry) {
 	if f.onChange != nil {
 		fn := f.onChange
 		w.OnChange = func(old, new any) {
-			o, oerr := convertScalar[T](old)
-			n, nerr := convertScalar[T](new)
+			o, oerr := convert.To[T](old)
+			n, nerr := convert.To[T](new)
 			if oerr != nil || nerr != nil {
 				return
 			}
@@ -522,7 +523,7 @@ func (l *ListEntry) value(vc *validation, path string) (val []any, set bool, err
 	if !vc.src.IsSet(path) {
 		return nil, false, nil
 	}
-	raw, cerr := toList(vc.src.Get(path))
+	raw, cerr := convert.ToList(vc.src.Get(path))
 	if cerr != nil {
 		return nil, false, fmt.Errorf("invalid list value: %w", cerr)
 	}
@@ -600,8 +601,8 @@ func (l *ListEntry) watch(path string, out *[]WatchEntry) {
 	if l.onChange != nil {
 		fn := l.onChange
 		w.OnChange = func(old, new any) {
-			o, oerr := toList(old)
-			n, nerr := toList(new)
+			o, oerr := convert.ToList(old)
+			n, nerr := convert.ToList(new)
 			if oerr != nil || nerr != nil {
 				return
 			}
