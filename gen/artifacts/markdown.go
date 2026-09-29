@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // none marks an empty table cell.

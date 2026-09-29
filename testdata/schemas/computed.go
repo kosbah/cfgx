@@ -3,7 +3,7 @@ package testschema
 import (
 	"fmt"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 )
 
 // Schema has Computed entries with inferred and explicit type arguments.

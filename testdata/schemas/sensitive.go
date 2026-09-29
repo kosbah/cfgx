@@ -1,6 +1,6 @@
 package testschema
 
-import "github.com/example/cfgx"
+import "github.com/epistemer/cfgx"
 
 // Schema has Sensitive entries, each settable through Env or a Getter.
 var Schema = cfgx.Define(

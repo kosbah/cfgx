@@ -26,10 +26,10 @@
 //
 // # Package layout
 //
-//   - [github.com/example/cfgx]: this package — DSL types and builder chain
-//   - [github.com/example/cfgx/runtime]: thin runtime (validators, IsLive watcher)
-//   - [github.com/example/cfgx/gen/parser]: go/ast-based schema parser
-//   - [github.com/example/cfgx/gen/codegen]: Go code generator
-//   - [github.com/example/cfgx/gen/artifacts]: artifact generators (.env, yaml, docs)
-//   - [github.com/example/cfgx/cmd/cfgx]: CLI binary
+//   - [github.com/epistemer/cfgx]: this package — DSL types and builder chain
+//   - [github.com/epistemer/cfgx/runtime]: thin runtime (validators, IsLive watcher)
+//   - [github.com/epistemer/cfgx/gen/parser]: go/ast-based schema parser
+//   - [github.com/epistemer/cfgx/gen/codegen]: Go code generator
+//   - [github.com/epistemer/cfgx/gen/artifacts]: artifact generators (.env, yaml, docs)
+//   - [github.com/epistemer/cfgx/cmd/cfgx]: CLI binary
 package cfgx

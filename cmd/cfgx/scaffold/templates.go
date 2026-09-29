@@ -1,4 +1,3 @@
-// Package scaffold holds the project templates written by `cfgx init`.
 package scaffold
 
 import (
@@ -22,9 +21,9 @@ type ScaffoldData struct {
 	GoVersion  string // e.g. "1.21"
 	Year       int    // current year
 
-	// CfgxVersion is the version of github.com/example/cfgx required in go.mod.
+	// CfgxVersion is the version of github.com/epistemer/cfgx required in go.mod.
 	CfgxVersion string
-	// CfgxReplace, if set, is a go.mod replace target for github.com/example/cfgx
+	// CfgxReplace, if set, is a go.mod replace target for github.com/epistemer/cfgx
 	// (a local directory), already quoted if needed.
 	CfgxReplace string
 }

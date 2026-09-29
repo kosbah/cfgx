@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/example/cfgx/internal/convert"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/convert"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // Item is anything that can be passed to Define: an Entry or a Constraint.

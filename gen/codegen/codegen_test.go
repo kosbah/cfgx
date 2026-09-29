@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/example/cfgx/gen/parser"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/gen/parser"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -256,7 +256,7 @@ func TestLiveMatrix(t *testing.T) {
 		"cfg.cfgxWatcher = w",
 		"func (c *Config) Close() {",
 		"OnChange:   e.OnChange,",
-		`"github.com/example/cfgx/runtime"`,
+		`"github.com/epistemer/cfgx/runtime"`,
 	)
 }
 

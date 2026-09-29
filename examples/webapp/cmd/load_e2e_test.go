@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/runtime"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/runtime"
 )
 
 // watchInterval is the IsLive polling interval used by these tests.

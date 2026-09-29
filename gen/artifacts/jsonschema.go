@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // jsonSchemaDraft is the $schema URI of the produced document.

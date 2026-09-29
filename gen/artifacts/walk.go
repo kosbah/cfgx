@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // otherSection is the title of the section holding untagged entries.

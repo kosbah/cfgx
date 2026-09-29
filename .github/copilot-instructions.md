@@ -12,7 +12,7 @@ layer for [cobra](https://github.com/spf13/cobra) + [viper](https://github.com/s
 applications. It solves four pain points: (1) command-driven wiring, (2) lack of type safety,
 (3) boilerplate, (4) painful config additions.
 
-**Module path:** `github.com/example/cfgx` (placeholder — update when finalized)
+**Module path:** `github.com/epistemer/cfgx` (placeholder — update when finalized)
 
 ---
 

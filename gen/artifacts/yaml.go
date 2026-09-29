@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // yamlIndent is the number of spaces per nesting level.

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // Schema is the runtime representation of a set of config entries and

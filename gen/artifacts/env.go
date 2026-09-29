@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // ruleWidth is the width, in runes, of section rules in .env and YAML output.

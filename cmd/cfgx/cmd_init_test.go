@@ -34,8 +34,8 @@ func TestInit_CreatesProject(t *testing.T) {
 	gomod := readFile(t, filepath.Join(dir, "go.mod"))
 	assertContains(t, "go.mod", gomod,
 		"module github.com/test/myapp\n",
-		"github.com/example/cfgx v0.0.0",
-		"replace github.com/example/cfgx => "+filepath.ToSlash(repo))
+		"github.com/epistemer/cfgx v0.0.0",
+		"replace github.com/epistemer/cfgx => "+filepath.ToSlash(repo))
 	assertContains(t, "main.go", readFile(t, filepath.Join(dir, "main.go")), `"github.com/test/myapp/cmd"`)
 	assertContains(t, "cmd/root.go", readFile(t, filepath.Join(dir, "cmd", "root.go")),
 		"RegisterFlags(root, Schema)", "cobra.OnInitialize(", "BindViper(viper.GetViper(), Schema)",
@@ -43,7 +43,7 @@ func TestInit_CreatesProject(t *testing.T) {
 	assertContains(t, "cmd/serve.go", readFile(t, filepath.Join(dir, "cmd", "serve.go")),
 		"LoadServe(Schema, viper.GetViper())")
 	assertContains(t, "cmd/schema.go", readFile(t, filepath.Join(dir, "cmd", "schema.go")),
-		`"github.com/example/cfgx"`, "//go:generate cfgx gen", "var Schema = cfgx.Define(",
+		`"github.com/epistemer/cfgx"`, "//go:generate cfgx gen", "var Schema = cfgx.Define(",
 		`cfgx.Bool("debug")`, `cfgx.Int("port")`, `Scope("serve")`, `cfgx.Object("db"`, `Scope("serve", "migrate")`)
 	assertContains(t, "config.gen.go", readFile(t, filepath.Join(dir, "cmd", "config.gen.go")),
 		"// Source: cmd/schema.go", "package cmd", "func LoadServe(", "func LoadMigrate(")
@@ -138,4 +138,19 @@ func TestInit_Builds(t *testing.T) {
 
 	run := goCmd("run", ".", "serve", "--port", "9001")
 	assertContains(t, "serve", run, "serving on :9001", "db=localhost:5432/myapp")
+}
+
+func TestModuleVersion(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"v1.2.3", "v1.2.3"},
+		{"v0.0.0-20260929181614-1dd5da40bccc", "v0.0.0-20260929181614-1dd5da40bccc"},
+		{"v0.0.0-20260929181614-1dd5da40bccc+dirty", "v0.0.0"},
+		{"dev", "v0.0.0"},
+		{"", "v0.0.0"},
+	}
+	for _, tt := range tests {
+		if got := moduleVersion(tt.in); got != tt.want {
+			t.Errorf("moduleVersion(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
 }

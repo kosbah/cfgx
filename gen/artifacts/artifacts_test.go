@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/example/cfgx/gen/parser"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/gen/parser"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 var update = flag.Bool("update", false, "update golden files")

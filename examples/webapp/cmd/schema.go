@@ -1,13 +1,13 @@
 package cmd
 
-//go:generate go run github.com/example/cfgx/cmd/cfgx gen
+//go:generate go run github.com/epistemer/cfgx/cmd/cfgx gen
 
 import (
 	"fmt"
 	"log"
 	"sync/atomic"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 )
 
 // Schema declares every configuration value of webapp. It is the single

@@ -1,9 +1,9 @@
-module github.com/example/cfgx/examples/webapp
+module github.com/epistemer/cfgx/examples/webapp
 
 go 1.21
 
 require (
-	github.com/example/cfgx v0.0.0
+	github.com/epistemer/cfgx v0.0.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 )
@@ -31,4 +31,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/example/cfgx => ../..
+replace github.com/epistemer/cfgx => ../..

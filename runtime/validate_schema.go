@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/internal/convert"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/internal/convert"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // ValidateSchema checks the values in v against the schema IR s, in the same

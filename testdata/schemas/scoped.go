@@ -1,6 +1,6 @@
 package testschema
 
-import "github.com/example/cfgx"
+import "github.com/epistemer/cfgx"
 
 // Schema has entries scoped to specific commands.
 var Schema = cfgx.Define(

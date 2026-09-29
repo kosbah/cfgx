@@ -14,9 +14,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/gen/parser"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/gen/parser"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 const fixtures = "../../testdata/schemas"
@@ -39,7 +39,7 @@ func writeSchema(t *testing.T, src string) string {
 
 // inline builds a schema file whose Define call contains items.
 func inline(items string) string {
-	return "package s\n\nimport (\n\t\"time\"\n\n\t\"github.com/example/cfgx\"\n)\n\nvar _ = time.Second\n\nvar Schema = cfgx.Define(\n" + items + "\n)\n"
+	return "package s\n\nimport (\n\t\"time\"\n\n\t\"github.com/epistemer/cfgx\"\n)\n\nvar _ = time.Second\n\nvar Schema = cfgx.Define(\n" + items + "\n)\n"
 }
 
 // find returns the entry at dot path id.
@@ -126,7 +126,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "computed result types",
-			src: "package s\n\nimport (\n\ttm \"time\"\n\n\t\"github.com/example/cfgx\"\n)\n\n" +
+			src: "package s\n\nimport (\n\ttm \"time\"\n\n\t\"github.com/epistemer/cfgx\"\n)\n\n" +
 				"func named(any) string { return \"\" }\n\nvar Schema = cfgx.Define(\n" +
 				"cfgx.Computed(\"a\", func(any) tm.Duration { return 0 }),\n" +
 				"cfgx.Computed[[]string](\"b\", nil2),\n" +
@@ -243,14 +243,14 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "import alias",
-			src:  "package s\n\nimport c \"github.com/example/cfgx\"\n\nvar S = c.Define(c.Int(\"x\").Default(1))\n",
+			src:  "package s\n\nimport c \"github.com/epistemer/cfgx\"\n\nvar S = c.Define(c.Int(\"x\").Default(1))\n",
 			validate: func(t *testing.T, s *ir.SchemaIR) {
 				equal(t, "entries", s.Entries, []ir.EntryIR{{ID: "x", Type: ir.TypeInt, Default: 1}})
 			},
 		},
 		{
 			name: "time import alias",
-			src:  "package s\n\nimport (\n\tt \"time\"\n\n\t\"github.com/example/cfgx\"\n)\n\nvar S = cfgx.Define(cfgx.Duration(\"d\").Default(90 * t.Minute))\n",
+			src:  "package s\n\nimport (\n\tt \"time\"\n\n\t\"github.com/epistemer/cfgx\"\n)\n\nvar S = cfgx.Define(cfgx.Duration(\"d\").Default(90 * t.Minute))\n",
 			validate: func(t *testing.T, s *ir.SchemaIR) {
 				equal(t, "default", find(t, s, "d").Default, "1h30m0s")
 			},
@@ -384,19 +384,19 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "no Define call",
-			src:     "package s\n\nimport \"github.com/example/cfgx\"\n\nvar S = cfgx.Int(\"x\")\n",
+			src:     "package s\n\nimport \"github.com/epistemer/cfgx\"\n\nvar S = cfgx.Int(\"x\")\n",
 			wantErr: "no cfgx.Define(...) call found",
 		},
 		{
 			name:    "two Define calls",
-			src:     "package s\n\nimport \"github.com/example/cfgx\"\n\nvar A = cfgx.Define(cfgx.Int(\"x\"))\n\nvar B = cfgx.Define(cfgx.Int(\"y\"))\n",
+			src:     "package s\n\nimport \"github.com/epistemer/cfgx\"\n\nvar A = cfgx.Define(cfgx.Int(\"x\"))\n\nvar B = cfgx.Define(cfgx.Int(\"y\"))\n",
 			wantErr: "more than one cfgx.Define(...) call",
 			errLine: 7, errCol: 9,
 		},
 		{
 			name:    "missing cfgx import",
 			src:     "package s\n\nvar S = cfgx.Define()\n",
-			wantErr: `does not import "github.com/example/cfgx"`,
+			wantErr: `does not import "github.com/epistemer/cfgx"`,
 		},
 		{
 			name:    "division by zero in duration",
@@ -430,7 +430,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "dot import",
-			src:     "package s\n\nimport . \"github.com/example/cfgx\"\n\nvar S = Define(Int(\"x\"))\n",
+			src:     "package s\n\nimport . \"github.com/epistemer/cfgx\"\n\nvar S = Define(Int(\"x\"))\n",
 			wantErr: "must be imported by name",
 		},
 		{
@@ -498,15 +498,15 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "blank import alongside named import",
-			src:  "package s\n\nimport (\n\t_ \"github.com/example/cfgx\"\n\tc \"github.com/example/cfgx\"\n)\n\nvar S = c.Define(c.Int(\"x\"))\n",
+			src:  "package s\n\nimport (\n\t_ \"github.com/epistemer/cfgx\"\n\tc \"github.com/epistemer/cfgx\"\n)\n\nvar S = c.Define(c.Int(\"x\"))\n",
 			validate: func(t *testing.T, s *ir.SchemaIR) {
 				equal(t, "entries", s.Entries, []ir.EntryIR{{ID: "x", Type: ir.TypeInt}})
 			},
 		},
 		{
 			name:    "only a blank import",
-			src:     "package s\n\nimport _ \"github.com/example/cfgx\"\n\nvar S = cfgx.Define()\n",
-			wantErr: `does not import "github.com/example/cfgx" by name`,
+			src:     "package s\n\nimport _ \"github.com/epistemer/cfgx\"\n\nvar S = cfgx.Define()\n",
+			wantErr: `does not import "github.com/epistemer/cfgx" by name`,
 		},
 		{
 			name:    "syntax error",

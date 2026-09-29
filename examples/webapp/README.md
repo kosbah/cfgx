@@ -32,10 +32,10 @@ serve-only settings such as `tls-cert-path`.
 - The cfgx CLI (optional — `go generate` runs it from this repository via
   `go run`):
   ```sh
-  go install github.com/example/cfgx/cmd/cfgx@latest
+  go install github.com/epistemer/cfgx/cmd/cfgx@latest
   ```
 
-`go.mod` replaces `github.com/example/cfgx` with the repository root
+`go.mod` replaces `github.com/epistemer/cfgx` with the repository root
 (`../..`), so the example always builds against the local cfgx sources.
 
 ## Getting started

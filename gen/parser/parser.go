@@ -16,11 +16,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // cfgxImportPath is the import path of the cfgx DSL package.
-const cfgxImportPath = "github.com/example/cfgx"
+const cfgxImportPath = "github.com/epistemer/cfgx"
 
 // ParseError describes a structured parse failure at a position in the schema file.
 type ParseError struct {

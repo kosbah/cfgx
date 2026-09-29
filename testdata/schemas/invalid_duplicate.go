@@ -1,6 +1,6 @@
 package testschema
 
-import "github.com/example/cfgx"
+import "github.com/epistemer/cfgx"
 
 // Schema declares "port" twice at the root: the parser must reject it.
 var Schema = cfgx.Define(

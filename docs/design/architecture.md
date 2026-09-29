@@ -32,13 +32,15 @@ both cobra and cfgx.
 │                                                                     │
 │  cmd/root.go                                                        │
 │    RegisterFlags(root, Schema) ──────────────────► cobra flags     │
-│    BindViper(root, v, Schema) ───────────────────► viper env bind  │
-│    cfg, err := Load(Schema, v) ─────────────────► *Config          │
+│    BindViper(v, Schema) ─────────────────────────► viper env bind  │
+│    cfg, err := LoadServe(Schema, v) ────────────► *ServeConfig     │
 │                    │                                                │
 │                    │  Schema retained for validators + IsLive       │
 │                    ▼                                                │
-│  cfgx/runtime                                                       │
-│    Validator registry    ◄──── Schema.Validate()                   │
+│  cfgx (Schema)                                                      │
+│    Required, DependsOn, validators ◄── Schema.ValidateScope()      │
+│    Getter / Computed closures      ◄── Schema.Getter/Compute()     │
+│  cfgx/runtime (only if IsLive entries exist)                        │
 │    IsLive Watcher        ◄──── Schema.WatcherEntries()             │
 │    OnChange dispatch                                                │
 └──────────────────────────┬──────────────────────────────────────────┘
@@ -66,17 +68,22 @@ both cobra and cfgx.
 The only package application developers import in their schema files.
 
 - **`Schema`** — holds the full tree of `Entry` values; retained at runtime
-- **`Define(entries ...Entry) *Schema`** — schema constructor
-- **`String | Int | Bool | Float64 | List | Object | Computed`** — entry constructors
+- **`Define(items ...Item) *Schema`** — schema constructor (entries and constraints)
+- **`String | Int | Bool | Float64 | Duration | List | Object | Computed`** — entry constructors
 - **`MutuallyExclusive(ids ...string) Constraint`** — schema-level constraint
 - **Builder chain** on every entry: `.Flag()`, `.Env()`, `.Default()`, `.Required()`,
   `.Sensitive()`, `.Desc()`, `.Validate()`, `.IsLive()`, `.OnChange()`, `.Getter()`,
   `.Deprecated()`, `.Scope()`, `.Tags()`, `.DependsOn()`
 - **`schema.ToIR() *ir.SchemaIR`** — produces the intermediate representation (used by gen)
-- **`schema.Validate(v *viper.Viper) error`** — runs all runtime validators (called by generated `Load()`)
-- **`schema.WatcherEntries() []runtime.WatchEntry`** — returns IsLive entries for the watcher
+- **`schema.Validate(v ValueSource) error`** — runs every validator; `*viper.Viper` satisfies `ValueSource`
+- **`schema.ValidateScope(v ValueSource, scope string) error`** — validates the entries one command
+  sees (called by generated `Load()` with `""` and by `Load<Scope>()` with its scope)
+- **`schema.Getter(key)` / `schema.Compute(key, parent)`** — let generated code call an entry's
+  `Getter` and `Computed` closures
+- **`schema.WatcherEntries() []cfgx.WatchEntry`** — returns IsLive entries for the watcher
 
-**Dependencies:** standard library only (no cobra, no viper, no fsnotify).
+**Dependencies:** standard library and cfgx's own internal packages only (no cobra, no viper,
+no fsnotify).
 
 ---
 
@@ -90,6 +97,20 @@ The data-transfer layer between the parser and the generators. Pure data; no log
 - JSON-serializable; used by `cfgx gen` to pass data between parse and generate steps
 
 **Dependencies:** standard library only.
+
+---
+
+### `cfgx/internal/convert` and `cfgx/internal/validate`
+
+Shared by the root package and `runtime`, so generated `Load` functions and the CLI treat
+values identically.
+
+- **`convert`** — turns untyped values (env strings, viper values, JSON-decoded IR literals)
+  into the Go type backing an entry
+- **`validate`** — the single implementation of the built-in validators (`Email`, `URL`,
+  `Port`, `PortRange`, `Base64`, `Regex`, `Duration`, `Semver`, `Enum`, `Range`)
+
+**Dependencies:** standard library (plus `internal/ir` for `convert`).
 
 ---
 
@@ -111,9 +132,12 @@ Transforms a `SchemaIR` into a formatted Go source file.
 
 - Template-driven (`text/template`); output always passed through `go/format.Source()`
 - Generates typed structs, methods, registration helpers, `Load()`
-- One struct per scope + one root `Config` struct
+- One struct per scope (`ServeConfig`, embedding `Config`) + one root `Config` struct;
+  one `Load<Scope>()` per scope
+- Generated code imports `github.com/epistemer/cfgx` (for `*cfgx.Schema`),
+  `github.com/epistemer/cfgx/runtime`, cobra and viper
 
-**Dependencies:** `github.com/example/cfgx/internal/ir` (data only),
+**Dependencies:** `github.com/epistemer/cfgx/internal/ir` (data only),
 standard library (`text/template`, `go/format`).
 
 ---
@@ -131,10 +155,11 @@ Transforms a `SchemaIR` into non-Go artifacts.
 
 Thin runtime package imported by generated `config.gen.go`.
 
-- **`Validator registry`** — built-in validators + `Register()` for custom ones
+- **`Validator registry`** — built-in validators + `Register()` for custom ones; `ValidateSchema`
+  validates a `SchemaIR` statically (used by `cfgx validate`)
 - **`Watcher`** — background goroutine; polls env vars or listens to file changes for IsLive entries
 
-**Dependencies:** `github.com/fsnotify/fsnotify` (file watching only).
+**Dependencies:** `github.com/epistemer/cfgx`, `github.com/fsnotify/fsnotify` (file watching only).
 
 ---
 
@@ -145,7 +170,7 @@ The `cfgx` command. Uses cobra for its own subcommands.
 - Orchestrates parser → codegen + artifact generators
 - Embeds scaffold templates for `cfgx init`
 
-**Dependencies:** all `gen/` packages + `github.com/spf13/cobra`.
+**Dependencies:** all `gen/` packages, `runtime` + `github.com/spf13/cobra`, `github.com/spf13/viper`.
 
 ---
 
@@ -158,12 +183,12 @@ cmd/schema.go
     ▼
 SchemaIR (JSON-serializable, no closures)
     │
-    ├─► gen/codegen.Generate(ir, "cmd") ────────► cmd/config.gen.go
+    ├─► gen/codegen.Generate(ir, opts) ─────────► cmd/config.gen.go
     ├─► gen/artifacts.EnvExample(ir) ───────────► .env.example
     ├─► gen/artifacts.YAMLExample(ir) ──────────► config.example.yaml
     ├─► gen/artifacts.JSONSchema(ir) ───────────► config.schema.json
     ├─► gen/artifacts.Markdown(ir) ─────────────► docs/config.md
-    └─► gen/artifacts.ManPage(ir) ──────────────► docs/config.1
+    └─► gen/artifacts.ManPage(ir, app, ver, date) ► docs/config.1
 ```
 
 ---
@@ -177,12 +202,16 @@ However, runtime validators and IsLive watching require the original `Schema` va
 they hold Go closures (`Validate`, `OnChange`, `Getter`) that cannot be serialized.
 Keeping the `Schema` at runtime means:
 - `Load()` calls `schema.ValidateScope(v, "")` (and `Load<Scope>()` calls
-  `schema.ValidateScope(v, "<scope>")`), which invokes the registered validator functions
-  of the entries in view for that command
+  `schema.ValidateScope(v, "<scope>")`), which runs the Required, DependsOn and
+  MutuallyExclusive checks, the built-in validators and the custom `Validate` closures of the
+  entries in view for that command
+- `Load` reads entries that have a `Getter` through `schema.Getter(key)`, and Computed
+  getters evaluate `schema.Compute(key, parent)`
 - The `Watcher` receives `WatchEntry` values from `schema.WatcherEntries()`, which include
   the `Getter` and `OnChange` closures
 
-The runtime import is thin: one `*Schema` pointer and a `*runtime.Watcher` (if any IsLive entries exist).
+The runtime import is thin: one `*Schema` pointer and, when the schema has IsLive entries, a
+`*runtime.Watcher` started by `Load` and stopped by the generated `Close()`.
 
 ### Why `go/ast` for parsing instead of compile-and-reflect?
 

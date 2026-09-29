@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/example/cfgx/examples/webapp/pkg/database"
+	"github.com/epistemer/cfgx/examples/webapp/pkg/database"
 )
 
 func newMigrateCmd() *cobra.Command {

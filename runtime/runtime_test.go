@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/gen/parser"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/gen/parser"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // ---------------------------------------------------------------------------

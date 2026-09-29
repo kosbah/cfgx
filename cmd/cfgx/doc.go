@@ -7,14 +7,16 @@
 //
 // Install:
 //
-//	go install github.com/example/cfgx/cmd/cfgx@latest
+//	go install github.com/epistemer/cfgx/cmd/cfgx@latest
 //
 // Commands:
 //
-//	cfgx init [module-path]     scaffold a new cobra/viper+cfgx project
-//	cfgx gen                    generate typed Go code and artifacts from schema
-//	cfgx validate               validate environment/config file against schema
+//	cfgx init <module-path>     scaffold a new cobra/viper+cfgx project
+//	cfgx gen                    generate config.gen.go and artifacts from a schema
+//	cfgx validate               validate a config file and/or the environment
 //	cfgx docs                   generate documentation artifacts only
 //
-// See docs/agents/phase6-cli.prompt.md for the complete specification.
+// Without --schema, gen, validate and docs look for a single schema.go
+// containing cfgx.Define under the current directory. validate exits with 0 on
+// success, 1 on validation errors and 2 on tool errors.
 package main

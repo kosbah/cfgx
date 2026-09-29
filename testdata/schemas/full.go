@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 )
 
 // validateName is a custom validator referenced by identifier.

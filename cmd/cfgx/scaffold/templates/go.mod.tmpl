@@ -3,11 +3,11 @@ module {{.ModulePath}}
 go {{.GoVersion}}
 
 require (
-	github.com/example/cfgx {{.CfgxVersion}}
+	github.com/epistemer/cfgx {{.CfgxVersion}}
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 )
 {{- if .CfgxReplace}}
 
-replace github.com/example/cfgx => {{.CfgxReplace}}
+replace github.com/epistemer/cfgx => {{.CfgxReplace}}
 {{- end}}

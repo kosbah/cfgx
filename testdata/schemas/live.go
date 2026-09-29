@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 )
 
 // Schema has IsLive entries: env-backed scalars with and without OnChange, a

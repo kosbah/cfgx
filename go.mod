@@ -1,4 +1,4 @@
-module github.com/example/cfgx
+module github.com/epistemer/cfgx
 
 go 1.21
 

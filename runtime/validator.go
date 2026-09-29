@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/internal/convert"
-	"github.com/example/cfgx/internal/ir"
-	"github.com/example/cfgx/internal/validate"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/internal/convert"
+	"github.com/epistemer/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/validate"
 )
 
 // ValidatorFunc validates a value. The argument is normally the Go type backing
@@ -123,7 +123,11 @@ func (r *Registry) validateEntries(entries []ir.EntryIR, parent string, v cfgx.V
 		if e.Type != ir.TypeList || e.ElementType == nil {
 			continue
 		}
-		for j, raw := range val.([]any) {
+		list, ok := val.([]any)
+		if !ok {
+			continue
+		}
+		for j, raw := range list {
 			ekey := key + "[" + strconv.Itoa(j) + "]"
 			ev, err := convert.ToType(e.ElementType.Type, raw)
 			if err != nil {

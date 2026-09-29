@@ -5,7 +5,7 @@ package main
 import (
 	"os"
 
-	"github.com/example/cfgx/examples/webapp/cmd"
+	"github.com/epistemer/cfgx/examples/webapp/cmd"
 )
 
 func main() {

@@ -1,6 +1,6 @@
 package cfgx
 
-import "github.com/example/cfgx/internal/validate"
+import "github.com/epistemer/cfgx/internal/validate"
 
 // The built-in validators below are thin wrappers over the shared
 // implementation in internal/validate, which the runtime package also uses, so

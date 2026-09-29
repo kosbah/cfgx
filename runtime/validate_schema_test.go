@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/gen/parser"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/gen/parser"
 )
 
 func fieldErrors(t *testing.T, err error) []cfgx.FieldError {
@@ -101,7 +101,7 @@ func TestValidateSchema_Parity(t *testing.T) {
 	// validators (Schema.ToIR only records that a Validate closure exists).
 	src := `package p
 
-import "github.com/example/cfgx"
+import "github.com/epistemer/cfgx"
 
 var Schema = cfgx.Define(
 	cfgx.Bool("tls"),

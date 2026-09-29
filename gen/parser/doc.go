@@ -14,5 +14,9 @@
 //	    }
 //	}
 //
+// [ParseWithWarnings] also returns non-fatal [Warning] values (currently: an
+// entry that is both Required and has a Default). Parsing stops at the
+// first error, so a schema with several problems is reported one at a time.
+//
 // See docs/agents/phase2-parser.prompt.md for the complete specification.
 package parser

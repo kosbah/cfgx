@@ -1,6 +1,6 @@
 package testschema
 
-import "github.com/example/cfgx"
+import "github.com/epistemer/cfgx"
 
 // Schema has a DependsOn referring to an entry that does not exist.
 var Schema = cfgx.Define(

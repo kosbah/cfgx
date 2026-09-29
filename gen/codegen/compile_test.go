@@ -37,7 +37,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -169,7 +169,7 @@ func main() {
 
 // TestGeneratedCodeCompiles builds the generated code for the full and
 // is_live schemas together with a main package in a temporary module that
-// replaces github.com/example/cfgx with this repository, vets it, and runs it.
+// replaces github.com/epistemer/cfgx with this repository, vets it, and runs it.
 func TestGeneratedCodeCompiles(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping compile test in -short mode")
@@ -196,7 +196,7 @@ func TestGeneratedCodeCompiles(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Generate: %v", err)
 			}
-			gomod := "module example.com/cfgxcompile\n\ngo 1.21\n\nrequire github.com/example/cfgx v0.0.0\n\nreplace github.com/example/cfgx => " + repoRoot + "\n"
+			gomod := "module example.com/cfgxcompile\n\ngo 1.21\n\nrequire github.com/epistemer/cfgx v0.0.0\n\nreplace github.com/epistemer/cfgx => " + repoRoot + "\n"
 			files := map[string]string{
 				"go.mod":        gomod,
 				"schema.go":     schemaSrc,

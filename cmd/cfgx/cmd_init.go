@@ -15,7 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/example/cfgx/cmd/cfgx/scaffold"
+	"github.com/epistemer/cfgx/cmd/cfgx/scaffold"
 )
 
 type initOptions struct {
@@ -46,8 +46,10 @@ Existing files are skipped unless --force is given.`,
 	f.StringVar(&o.dir, "dir", "", "target directory (default: last element of module path)")
 	f.BoolVar(&o.force, "force", false, "overwrite existing files")
 	f.BoolVar(&o.noTidy, "no-tidy", false, "skip running go mod tidy after scaffolding")
-	f.StringVar(&o.replace, "cfgx-replace", "", "add a go.mod replace directive pointing github.com/example/cfgx at this directory")
-	_ = f.MarkHidden("cfgx-replace")
+	f.StringVar(&o.replace, "cfgx-replace", "", "add a go.mod replace directive pointing github.com/epistemer/cfgx at this directory")
+	if err := f.MarkHidden("cfgx-replace"); err != nil {
+		panic(err) // the flag is defined just above
+	}
 	return cmd
 }
 
@@ -126,7 +128,10 @@ func runInit(stdout, stderr io.Writer, modulePath string, o initOptions) error {
 		fmt.Fprintln(stdout, "✓ ran go mod tidy")
 	}
 
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "" // displayPath then falls back to the absolute path
+	}
 	fmt.Fprintf(stdout, `
 Created %s in %s.
 
@@ -160,7 +165,15 @@ func goVersion() string {
 // cfgxModuleVersion is the cfgx version required by scaffolded projects: the
 // version of this binary if it is a release, else v0.0.0 (use --cfgx-replace).
 func cfgxModuleVersion() string {
-	if v := cfgxVersion(); strings.HasPrefix(v, "v") {
+	return moduleVersion(cfgxVersion())
+}
+
+// moduleVersion returns v if it can appear in a go.mod require directive, else
+// v0.0.0. Go 1.24+ stamps binaries built inside a checkout with a VCS
+// pseudo-version, which carries "+dirty" when the tree has local changes; build
+// metadata is not allowed in go.mod.
+func moduleVersion(v string) string {
+	if strings.HasPrefix(v, "v") && !strings.Contains(v, "+") {
 		return v
 	}
 	return "v0.0.0"

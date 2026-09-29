@@ -14,9 +14,10 @@ in generated output, and any validation rules.
 | `cfgx.Int("id")` | `int` | `"integer"` | |
 | `cfgx.Bool("id")` | `bool` | `"boolean"` | |
 | `cfgx.Float64("id")` | `float64` | `"number"` | |
+| `cfgx.Duration("id")` | `time.Duration` | `"string"` | Go duration syntax, e.g. `"30s"` |
 | `cfgx.List("id", elemType)` | `[]T` | `"array"` | element type is another entry |
 | `cfgx.Object("id", ...props)` | `XxxConfig` struct | `"object"` | recursive; generates nested struct |
-| `cfgx.Computed("id", fn)` | `T` (inferred) | omitted | derived; stored as closure; no flag/env |
+| `cfgx.Computed("id", fn)` | `T` (inferred from `fn func(parent any) T`) | omitted | derived; stored as closure; no flag/env; `parent` is the generated struct holding the entry (e.g. `*DbConfig`) |
 
 ---
 
@@ -28,8 +29,8 @@ in generated output, and any validation rules.
 cfgx.String("app-name")
 ```
 
-- Determines the Go field name (`AppName`): kebab-case → PascalCase
-- Determines the YAML/JSON field name (`app-name` or `app_name` — configurable)
+- Determines the Go getter name (`AppName()`): kebab-case → PascalCase
+- Is used as-is as the viper key and YAML/JSON field name (`app-name`; nested: `db.host`)
 - Must be unique within its parent scope (root or object)
 - Must be a valid Go identifier after conversion
 
@@ -56,7 +57,8 @@ cfgx.String("db-password").Env("DB_PASSWORD")
 
 - The environment variable name passed to `v.BindEnv()`
 - Convention (not enforced): `UPPER_SNAKE_CASE`
-- If omitted, viper uses the default env key derivation (`VIPER_ENV_KEYREPLACER`)
+- If omitted, `BindViper()` binds no env var for the entry (viper's `AutomaticEnv`, which the
+  `cfgx init` scaffold enables, may still match the upper-cased key)
 - Appears in: `BindViper()`, `.env.example`, `config.schema.json` (as `x-env`)
 
 ---
@@ -82,8 +84,8 @@ cfgx.String("db-name").Required()
 ```
 
 - `Load()` returns an error if the value is the zero value after loading all sources
-- Cannot be combined with `.Default()` (a required field with a default is always satisfied;
-  generator should warn)
+- Should not be combined with `.Default()` (a required field with a default is always
+  satisfied); the parser reports it as a warning and `cfgx gen` prints it
 - Appears in: `Load()` validation, JSON Schema `required` array, docs marked **Required**
 
 ---
@@ -94,12 +96,11 @@ cfgx.String("db-name").Required()
 cfgx.String("db-password").Sensitive()
 ```
 
-- The Go field is stored as `string` internally but:
-  - `String()` method returns `"[redacted]"`
-  - The field is excluded from `%v` formatting
-  - `fmt.Stringer` implementation returns `"[redacted]"`
+- The getter returns the real `string`, but the unexported field is a wrapper type whose
+  `String()`, `GoString()`, `MarshalJSON()` and `MarshalText()` all return `"[redacted]"`,
+  so printing or marshalling the config struct never shows the value
 - In `.env.example`: empty string with `# REQUIRED — sensitive, do not commit`
-- In `config.example.yaml`: empty string with `# sensitive` comment
+- In `config.example.yaml`: empty string with a `# sensitive — do not commit this value` comment
 - In JSON Schema: `"writeOnly": true`
 - In markdown docs: displayed as **sensitive** in the Type column
 - Must not appear in log lines from generated code
@@ -135,8 +136,10 @@ cfgx.Int("port").Validate(cfgx.PortRange(1024, 65535))
 
 - Called during `Load()` after the value is read from viper
 - Multiple `.Validate()` calls are allowed; all validators run and errors are combined
-- Built-in validators are provided by `cfgx/runtime`; they are referenced by name in the
-  DSL and resolved at runtime
+- Built-in validators are constructors in the root `cfgx` package (`cfgx.Email()`,
+  `cfgx.PortRange(1024, 65535)`, …) that return typed functions; the parser records them by
+  name in `SchemaIR`, and `cfgx validate` resolves those names through the `runtime` registry.
+  Both share one implementation (`internal/validate`)
 - Custom validator closures are stored in the `Schema` at runtime but are not serialized
   into `SchemaIR`; they appear as `HasValidate: true` in the IR
 
@@ -149,10 +152,14 @@ cfgx.Bool("debug").IsLive()
 ```
 
 - Marks the config as hot-reloadable
-- `Load()` sets up a `runtime.WatchEntry` for this field
-- Accessing the value after `Load()` always returns the current live value
-- Must be paired with a `Getter` or env/file source (polling the source on each access)
-- The IsLive watcher in `cfgx/runtime` polls env vars or uses fsnotify for file-backed configs
+- `Load()` registers the entry with a `runtime.Watcher`, starts it, and the generated config
+  gets a `Close()` method that stops it
+- The value is stored in an `atomic.Value`; the getter always returns the latest value
+- Sources: the entry's env var is polled every interval (default 5s); a config file read by
+  viper is watched with fsnotify and re-read through `v.ReadInConfig`; an entry with only a
+  `Getter` has it called every interval
+- The watcher reads the application's viper instance from its own goroutine, and viper is
+  not goroutine-safe: don't mutate that viper instance while a live config is loaded
 
 ---
 
@@ -175,12 +182,16 @@ cfgx.Bool("debug").IsLive().OnChange(func(old, new bool) {
 
 ```go
 cfgx.String("tls-cert").Getter(func() (string, error) {
-    return os.ReadFile("/etc/ssl/cert.pem")
+    b, err := os.ReadFile("/etc/ssl/cert.pem")
+    return string(b), err
 })
 ```
 
-- Lazy-load function; invoked by `Load()` instead of viper for this field
-- If `.IsLive()`, invoked on every access
+- Invoked by `Load()` instead of reading viper for this field; an error from it is returned
+  by `Load()`
+- If `.IsLive()`, re-invoked by the watcher when the entry's env var or config file changes,
+  or on every poll if it has neither
+- Skipped by `cfgx validate`, which can't run closures
 - Closure stored in `Schema`; flagged as `HasGetter: true` in `SchemaIR`
 - Useful for secrets loaded from a vault, files read at startup, etc.
 
@@ -192,8 +203,9 @@ cfgx.String("tls-cert").Getter(func() (string, error) {
 cfgx.String("old-flag").Deprecated("use --new-flag instead")
 ```
 
-- `Load()` emits a `log.Warn` when the deprecated config is set
-- Cobra flag shows `[DEPRECATED: use --new-flag instead]` in help text
+- `RegisterFlags()` marks the flag deprecated with cobra's `MarkDeprecated`: the flag is hidden
+  from help and cobra prints `Flag --old-flag has been deprecated, use --new-flag instead` when it is used
+- The generated getter carries a `// Deprecated:` godoc line
 - In markdown docs: entry is struck-through with the deprecation message
 - In `.env.example`: prefixed with `## DEPRECATED: ...`
 - In JSON Schema: `"deprecated": true` + `"description"` updated with message
@@ -208,8 +220,11 @@ cfgx.Object("db", ...).Scope("serve", "migrate")
 
 - Restricts which cobra command(s) this entry belongs to
 - The code generator emits the config only in the struct(s) for those scopes
-- Root Config struct only contains entries with no scope or scope containing the command
-- `RegisterFlags()` and `BindViper()` are scope-aware
+  (e.g. `ServeConfig`, which embeds the root `Config`), loaded by `LoadServe()`
+- The root `Config` struct only contains entries with no scope
+- `LoadServe()` validates only the scope-less entries and those scoped to `serve`
+- `RegisterFlags()` and `BindViper()` are **not** scope-aware: every flag is registered as a
+  persistent flag on the command passed to `RegisterFlags()` (usually the root command)
 
 ---
 
@@ -256,16 +271,19 @@ cfgx.Define(
 
 ## Generated field naming rules
 
-| DSL ID | Go field name | Cobra flag | Env name (if `.Env()` not set) |
-|---|---|---|---|
-| `port` | `Port` | `--port` | `PORT` |
-| `app-name` | `AppName` | `--app-name` | `APP_NAME` |
-| `db` (object) | `Db` | n/a | n/a |
-| `db.host` | nested in `DbConfig.Host` | `--db-host` | `DB_HOST` |
-| `tls-cert-path` | `TLSCertPath` | `--tls-cert-path` | `TLS_CERT_PATH` |
+| DSL ID | Go getter | Viper key |
+|---|---|---|
+| `port` | `Port()` | `port` |
+| `app-name` | `AppName()` | `app-name` |
+| `db` (object) | `Db() *DbConfig` | `db` |
+| `db.host` | `DbConfig.Host()` | `db.host` |
+| `tls-cert-path` | `TLSCertPath()` | `tls-cert-path` |
 
-**Acronym handling:** `ID`, `URL`, `TLS`, `HTTP`, `API` → all-caps in Go field names.
-Acronym list is configurable in `cfgx gen` via `--acronyms`.
+Flags and env vars are never derived from the ID: an entry has a flag only if it calls
+`.Flag()` and an env var only if it calls `.Env()`.
+
+**Acronym handling:** `ID`, `URL`, `TLS`, `HTTP`, `API`, `JSON`, … → all-caps in Go names
+(fixed list in `gen/codegen/names.go`).
 
 ---
 

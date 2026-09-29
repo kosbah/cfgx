@@ -27,12 +27,12 @@ linters-settings:
     enable-all: true
     disable:
       - shadow  # too noisy
+      # fieldalignment would reorder exported structs (and EntryIR's JSON
+      # field order) for a few bytes each; readable field grouping wins.
+      - fieldalignment
 
   goimports:
-    local-prefixes: github.com/example/cfgx
-
-  staticcheck:
-    go: "1.21"
+    local-prefixes: github.com/epistemer/cfgx
 
 issues:
   exclude-rules:

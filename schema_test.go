@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // mapSource is a ValueSource backed by a flat map of dot-separated keys.

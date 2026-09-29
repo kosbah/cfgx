@@ -15,15 +15,23 @@
 
 | # | Phase | Key output | Status | Depends on |
 |---|-------|-----------|--------|-----------|
-| 0 | Repo & module setup | go.mod, CI, linting | ⬜ | — |
-| 1 | Core DSL | `cfgx` package, `SchemaIR` | ⬜ | 0 |
-| 2 | Schema parser | `gen/parser`, AST extraction | ⬜ | 1 |
-| 3 | Go code generator | `gen/codegen`, `config.gen.go` template | ⬜ | 2 |
-| 4 | Artifact generators | `.env`, yaml, JSON schema, docs, man | ⬜ | 2 |
-| 5 | Runtime package | validators, IsLive watcher, OnChange | ⬜ | 1 |
-| 6 | CLI tool | `cfgx init/gen/validate/docs` | ⬜ | 3, 4 |
-| 7 | Integration & examples | example project, e2e tests, benchmarks | ⬜ | 5, 6 |
-| 8 | Documentation | README, godoc, migration guide | ⬜ | 7 |
+| 0 | Repo & module setup | go.mod, CI, linting | ✅ | — |
+| 1 | Core DSL | `cfgx` package, `SchemaIR` | ✅ | 0 |
+| 2 | Schema parser | `gen/parser`, AST extraction | ✅ | 1 |
+| 3 | Go code generator | `gen/codegen`, `config.gen.go` template | ✅ | 2 |
+| 4 | Artifact generators | `.env`, yaml, JSON schema, docs, man | ✅ | 2 |
+| 5 | Runtime package | validators, IsLive watcher, OnChange | ✅ | 1 |
+| 6 | CLI tool | `cfgx init/gen/validate/docs` | ✅ | 3, 4 |
+| 7 | Integration & examples | example project, e2e tests, benchmarks | ✅ | 5, 6 |
+| 8 | Documentation | README, godoc, migration guide, CI fix | ✅ | 7 |
+
+All phases are built. They were implemented in the order 1, 2, 5, 3, 4, 6, 7, 8 (Phase 0 was
+the initial repository skeleton; its CI and lint setup were fixed in Phase 8). Each phase
+is one stacked pull request against `epistemer/cfgx:master`.
+
+The sections below are the original plan. Where the built code differs, the code, the
+[README](README.md) and [docs/design](docs/design) are authoritative; the notable
+differences are listed under each phase as **As built**.
 
 ---
 
@@ -32,7 +40,7 @@
 **Goal:** Establish the project skeleton so all subsequent phases can work independently.
 
 **Outputs:**
-- `go.mod` with module path `github.com/example/cfgx`, Go 1.21
+- `go.mod` with module path `github.com/epistemer/cfgx`, Go 1.21
 - `.github/workflows/ci.yml` — lint (golangci-lint), build, test on push/PR
 - `.golangci.yml` — linter config (errcheck, staticcheck, govet, gofmt, unused)
 - `CONTRIBUTING.md`
@@ -126,6 +134,20 @@ using `go/ast` and return a `SchemaIR`.
 
 **See:** [docs/agents/phase3-codegen.prompt.md](docs/agents/phase3-codegen.prompt.md)
 
+**As built:**
+- `Generate(schema *ir.SchemaIR, opts codegen.Options)`; `Options` carries the package name,
+  the cfgx module path and the source file shown in the header.
+- `BindViper(v *viper.Viper, schema *cfgx.Schema)`: flags registered by `RegisterFlags` are
+  bound from there, so `BindViper` needs no command argument.
+- Besides `Load` (shared `Config`), one `Load<Scope>` per scope returns a `<Scope>Config`
+  that embeds `Config`. Each validates with `schema.ValidateScope(v, scope)` and returns a
+  `*cfgx.ValidationErrors`.
+- Getters everywhere (`cfg.Port()`, `cfg.Db().Host()`); a Sensitive getter returns the plain
+  `string`, while the stored value redacts itself when printed or marshalled.
+- The generated file imports `github.com/epistemer/cfgx` (for `*cfgx.Schema`) as well as
+  `cfgx/runtime`, cobra and viper. When the schema has IsLive entries, Load starts a
+  `runtime.Watcher` and the config gets a `Close` method.
+
 ---
 
 ## Phase 4 — Artifact generators (`gen/artifacts`)
@@ -192,6 +214,12 @@ minimal startup overhead.
 
 **See:** [docs/agents/phase5-runtime.prompt.md](docs/agents/phase5-runtime.prompt.md)
 
+**As built:** `Watcher.Register` takes a `runtime.WatchEntry` struct (Key, Env, ConfigFile,
+Getter, ValuePtr `*atomic.Value`, OnChange) and `SetReloader` sets the function run on a
+config file change. The built-in validators live once in `internal/validate` and are wrapped
+by both the root package (typed, for the DSL) and `runtime` (`ValidatorFunc`, for the
+registry). `runtime.ValidateSchema` validates a `SchemaIR` statically for `cfgx validate`.
+
 ---
 
 ## Phase 6 — CLI tool (`cmd/cfgx`)
@@ -232,6 +260,13 @@ minimal startup overhead.
 
 **See:** [docs/agents/phase6-cli.prompt.md](docs/agents/phase6-cli.prompt.md)
 
+**As built:** templates live in `cmd/cfgx/scaffold/templates/` and `cfgx init` also writes
+`cmd/migrate.go`, then runs `cfgx gen` and `go mod tidy`. `cfgx gen` writes `config.gen.go`
+next to the schema and the artifacts to `--out-dir` (default: the module root). `gen`,
+`validate` and `docs` auto-discover a single `schema.go` when `--schema` is omitted.
+`cfgx validate` uses `runtime.ValidateSchema` rather than a generated `Load()`, so it can't
+run custom `Validate` closures or Getters, and it isn't scope-aware.
+
 ---
 
 ## Phase 7 — Integration & examples
@@ -255,11 +290,18 @@ minimal startup overhead.
 - All e2e tests pass
 - Benchmark shows ≤ 2× startup overhead vs. bare viper
 
+**As built:** all criteria met except the benchmark. `LoadServe` costs about 3.9× plain viper
+reads (about 6× on a 4-core Linux VM) because it also validates every value and starts the
+IsLive watcher. The e2e tests live in `_test/e2e/` (build tag `e2e`) and
+`examples/webapp/cmd/*_e2e_test.go`.
+
 ---
 
 ## Phase 8 — Documentation
 
 **Outputs:**
+- Module path renamed to `github.com/epistemer/cfgx`; CI fixed (`master` branch, pinned
+  golangci-lint v1.64.8, e2e and example jobs)
 - `README.md` finalised (filled-in badges, accurate quick start)
 - `CONTRIBUTING.md` — setup, testing, PR checklist
 - `docs/migration.md` — step-by-step guide for adding cfgx to an existing cobra/viper project

@@ -12,7 +12,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/example/cfgx/internal/convert"
+	"github.com/epistemer/cfgx/internal/convert"
 )
 
 // DefaultInterval is the env polling interval used when NewWatcher is given a
@@ -164,7 +164,7 @@ func (w *Watcher) prepare() {
 		e := &w.entries[i]
 		st := &w.states[i]
 		st.entry = e
-		st.ptr = e.ValuePtr.(*atomic.Value)
+		st.ptr = e.ValuePtr.(*atomic.Value) //nolint:errcheck // type checked by Register
 		if e.Env != "" {
 			st.lastRaw, st.lastSet = os.LookupEnv(e.Env)
 			w.envIdx = append(w.envIdx, i)

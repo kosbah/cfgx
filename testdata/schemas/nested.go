@@ -3,7 +3,7 @@ package testschema
 import (
 	"time"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 )
 
 // Schema nests objects three levels deep: server -> tls -> files.

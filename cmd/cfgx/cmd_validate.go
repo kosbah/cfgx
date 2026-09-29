@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/internal/convert"
-	"github.com/example/cfgx/internal/ir"
-	"github.com/example/cfgx/runtime"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/internal/convert"
+	"github.com/epistemer/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/runtime"
 )
 
 // Exit codes of cfgx validate.

@@ -42,7 +42,7 @@ cfgx gen --schema cmd/schema.go --pkg cmd
 
 If `cfgx` is not installed:
 ```sh
-go run github.com/example/cfgx/cmd/cfgx@latest gen --schema cmd/schema.go
+go run github.com/epistemer/cfgx/cmd/cfgx@latest gen --schema cmd/schema.go
 ```
 
 ### 3. Report results

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // ManPage generates a groff man page fragment (config.1) from schema.

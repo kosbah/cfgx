@@ -6,7 +6,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/example/cfgx"
+	"github.com/epistemer/cfgx"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

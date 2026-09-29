@@ -15,18 +15,18 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // DefaultModule is the cfgx module path used when Options.Module is empty.
-const DefaultModule = "github.com/example/cfgx"
+const DefaultModule = "github.com/epistemer/cfgx"
 
 // Options configures code generation.
 type Options struct {
 	// Package is the Go package name for the generated file (e.g. "cmd").
 	Package string
 
-	// Module is the module import path of cfgx (e.g. "github.com/example/cfgx").
+	// Module is the module import path of cfgx (e.g. "github.com/epistemer/cfgx").
 	// It is used to build the import paths of cfgx and cfgx/runtime. Empty
 	// means DefaultModule.
 	Module string

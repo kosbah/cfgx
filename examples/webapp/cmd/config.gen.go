@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/example/cfgx"
-	"github.com/example/cfgx/runtime"
+	"github.com/epistemer/cfgx"
+	"github.com/epistemer/cfgx/runtime"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -16,10 +16,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/example/cfgx/gen/artifacts"
-	"github.com/example/cfgx/gen/codegen"
-	schemaparser "github.com/example/cfgx/gen/parser"
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/gen/artifacts"
+	"github.com/epistemer/cfgx/gen/codegen"
+	schemaparser "github.com/epistemer/cfgx/gen/parser"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 type genOptions struct {

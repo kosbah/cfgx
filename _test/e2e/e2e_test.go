@@ -163,11 +163,11 @@ func TestGen_ProducesCompilableOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Point the replace directive at this repository.
-	re := regexp.MustCompile(`(?m)^replace github.com/example/cfgx => .*$`)
+	re := regexp.MustCompile(`(?m)^replace github.com/epistemer/cfgx => .*$`)
 	if !re.Match(mod) {
-		t.Fatal("examples/webapp/go.mod has no replace directive for github.com/example/cfgx")
+		t.Fatal("examples/webapp/go.mod has no replace directive for github.com/epistemer/cfgx")
 	}
-	mod = re.ReplaceAll(mod, []byte("replace github.com/example/cfgx => "+repoRoot))
+	mod = re.ReplaceAll(mod, []byte("replace github.com/epistemer/cfgx => "+repoRoot))
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), mod, 0o644); err != nil {
 		t.Fatal(err)
 	}

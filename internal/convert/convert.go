@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 // Scalar is the set of Go types backing the scalar entry kinds.

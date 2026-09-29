@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/cfgx/internal/ir"
+	"github.com/epistemer/cfgx/internal/ir"
 )
 
 func TestBuilderMethodsSetIR(t *testing.T) {

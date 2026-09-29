@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   lint:
@@ -14,12 +14,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        # v6 of the action runs golangci-lint v1, which reads the repo's v1
+        # .golangci.yml. Keep the version pinned; v2 rejects the v1 config.
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          version: v1.64.8
+          args: --timeout=5m
 
   test:
     name: Test
@@ -37,8 +40,10 @@ jobs:
         run: go mod download
       - name: Build
         run: go build ./...
+      - name: Vet
+        run: go vet ./...
       - name: Test (with race detector)
-        run: go test -race -count=1 -timeout=120s ./...
+        run: go test -race -count=1 -timeout=300s ./...
       - name: Test coverage
         if: matrix.go == '1.21'
         run: go test -count=1 -coverprofile=coverage.out ./...
@@ -58,10 +63,9 @@ jobs:
         with:
           go-version: "1.21"
           cache: true
-      - name: Install cfgx
-        run: go install ./cmd/cfgx
+      # The e2e suite builds its own cfgx binary from ./cmd/cfgx.
       - name: Run e2e tests
-        run: go test -tags e2e -race -count=1 -timeout=120s ./_test/e2e/...
+        run: go test -tags e2e -race -count=1 -timeout=600s ./_test/e2e/...
 
   golden-files:
     name: Check golden files are up to date
@@ -77,8 +81,9 @@ jobs:
         run: go test ./gen/... -update
       - name: Check for diffs
         run: |
-          if [ -n "$(git diff --name-only)" ]; then
+          if [ -n "$(git status --porcelain)" ]; then
             echo "Golden files are out of date. Run 'go test ./gen/... -update' and commit."
+            git status --porcelain
             git diff
             exit 1
           fi
@@ -87,21 +92,34 @@ jobs:
     name: Build example project
     runs-on: ubuntu-latest
     needs: [test]
+    defaults:
+      run:
+        working-directory: examples/webapp
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
-      - name: Install cfgx
-        run: go install ./cmd/cfgx
+          cache-dependency-path: |
+            go.sum
+            examples/webapp/go.sum
+      # //go:generate runs `go run github.com/epistemer/cfgx/cmd/cfgx gen`,
+      # resolved to this checkout through the example's replace directive.
       - name: Regenerate example
-        run: go generate ./examples/webapp/cmd/...
+        run: go generate ./cmd/...
+      - name: Check generated files are up to date
+        # docs/config.1 carries a date line, so it is allowed to differ.
+        run: |
+          if ! git diff --exit-code -- . ':!docs/config.1'; then
+            echo "examples/webapp is out of date. Run 'go generate ./cmd/...' in examples/webapp and commit."
+            exit 1
+          fi
       - name: Build example
-        run: cd examples/webapp && go build ./...
+        run: go build ./...
       - name: Check no cfgx/viper in pkg/
         run: |
-          if grep -r "github.com/example/cfgx\|github.com/spf13/viper" examples/webapp/pkg/; then
+          if grep -r "github.com/epistemer/cfgx\|github.com/spf13/viper" pkg/; then
             echo "ERROR: business logic packages must not import cfgx or viper"
             exit 1
           fi
