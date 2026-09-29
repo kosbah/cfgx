@@ -120,13 +120,33 @@ func TestParse(t *testing.T) {
 				}
 				equal(t, "dsn desc", find(t, s, "db.dsn").Description, "Connection string")
 				equal(t, "workers tags", find(t, s, "workers").Tags, []string{"runtime"})
+				equal(t, "dsn result type", find(t, s, "db.dsn").ResultType, "string")
+				equal(t, "workers result type", find(t, s, "workers").ResultType, "int")
+			},
+		},
+		{
+			name: "computed result types",
+			src: "package s\n\nimport (\n\ttm \"time\"\n\n\t\"github.com/example/cfgx\"\n)\n\n" +
+				"func named(any) string { return \"\" }\n\nvar Schema = cfgx.Define(\n" +
+				"cfgx.Computed(\"a\", func(any) tm.Duration { return 0 }),\n" +
+				"cfgx.Computed[[]string](\"b\", nil2),\n" +
+				"cfgx.Computed(\"c\", func(any) (out []int) { return nil }),\n" +
+				"cfgx.Computed(\"d\", func(any) interface{} { return nil }),\n" +
+				"cfgx.Computed(\"e\", named),\n" +
+				"cfgx.Computed(\"f\", func(any) map[string]*int { return nil }),\n" +
+				")\n\nvar nil2 = func(any) []string { return nil }\n",
+			validate: func(t *testing.T, s *ir.SchemaIR) {
+				want := map[string]string{"a": "time.Duration", "b": "[]string", "c": "[]int", "d": "any", "e": "", "f": "map[string]*int"}
+				for id, rt := range want {
+					equal(t, id+" result type", find(t, s, id).ResultType, rt)
+				}
 			},
 		},
 		{
 			name: "explicit type args on Computed",
 			src:  inline(`cfgx.Computed[string]("dsn", func(parent any) string { return "" }),`),
 			validate: func(t *testing.T, s *ir.SchemaIR) {
-				equal(t, "entries", s.Entries, []ir.EntryIR{{ID: "dsn", Type: ir.TypeComputed, HasGetter: true}})
+				equal(t, "entries", s.Entries, []ir.EntryIR{{ID: "dsn", Type: ir.TypeComputed, HasGetter: true, ResultType: "string"}})
 			},
 		},
 		{

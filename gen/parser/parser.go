@@ -487,6 +487,7 @@ func (p *schemaParser) buildEntry(expr ast.Expr, ctor chainCall, methods []chain
 			return nil, p.errAt(args[1], "%s.Computed %q: fn must not be nil", p.pkg, id)
 		}
 		e.HasGetter = true
+		e.ResultType = p.computedResultType(call)
 	}
 
 	allowed := methodSets[e.Type]
@@ -508,6 +509,71 @@ func (p *schemaParser) buildEntry(expr ast.Expr, ctor chainCall, methods []chain
 		p.warnAt(n.pos, "entry %q is Required but also has a Default, so Required can never fail", id)
 	}
 	return n, nil
+}
+
+// computedResultType returns the Go source of T for a Computed[T] constructor
+// call: from its explicit type argument if present, otherwise from the single
+// result of its function literal. It returns "" if T cannot be determined.
+func (p *schemaParser) computedResultType(call *ast.CallExpr) string {
+	switch f := unparen(call.Fun).(type) {
+	case *ast.IndexExpr:
+		return p.typeString(f.Index)
+	case *ast.IndexListExpr:
+		if len(f.Indices) == 1 {
+			return p.typeString(f.Indices[0])
+		}
+		return ""
+	}
+	lit, ok := unparen(call.Args[1]).(*ast.FuncLit)
+	if !ok || lit.Type.Results == nil || len(lit.Type.Results.List) != 1 {
+		return ""
+	}
+	res := lit.Type.Results.List[0]
+	if len(res.Names) > 1 {
+		return ""
+	}
+	return p.typeString(res.Type)
+}
+
+// typeString renders a type expression as Go source, writing the time
+// package as "time" whatever its local import name and the empty interface
+// as "any".
+func (p *schemaParser) typeString(expr ast.Expr) string {
+	switch x := unparen(expr).(type) {
+	case *ast.Ident:
+		return x.Name
+	case *ast.InterfaceType:
+		if x.Methods == nil || len(x.Methods.List) == 0 {
+			return "any"
+		}
+	case *ast.SelectorExpr:
+		if id, ok := x.X.(*ast.Ident); ok && p.timePkg != "" && id.Name == p.timePkg {
+			return "time." + x.Sel.Name
+		}
+	case *ast.ArrayType:
+		if x.Len == nil {
+			if elem := p.typeString(x.Elt); elem != "" {
+				return "[]" + elem
+			}
+			return ""
+		}
+	case *ast.StarExpr:
+		if elem := p.typeString(x.X); elem != "" {
+			return "*" + elem
+		}
+		return ""
+	case *ast.MapType:
+		k, v := p.typeString(x.Key), p.typeString(x.Value)
+		if k != "" && v != "" {
+			return "map[" + k + "]" + v
+		}
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, p.fset, expr); err != nil {
+		return ""
+	}
+	return strings.Join(strings.Fields(buf.String()), " ")
 }
 
 // applyMethod applies one builder method to n, mirroring the runtime builder.

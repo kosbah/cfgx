@@ -17,6 +17,7 @@ contains a `cfgx.Define(...)` call with various features.
 | `sensitive.go` | Schema with Sensitive entries — must appear in IR with Sensitive=true |
 | `deprecated.go` | Schema with Deprecated entries — message must be extracted |
 | `scoped.go` | Schema with Scoped entries — scope array must be extracted |
+| `live.go` | Schema with IsLive entries (env-backed, Getter-backed, list, scoped, Computed with OnChange) — codegen golden and compile tests |
 
 ## Usage in tests
 

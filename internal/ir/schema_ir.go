@@ -49,6 +49,11 @@ type EntryIR struct {
 
 	// List element type (List only)
 	ElementType *EntryIR `json:"element_type,omitempty"`
+
+	// Computed result type (Computed only): the Go type T of Computed[T] as
+	// written in source, e.g. "string", "time.Duration", "[]string" or "any".
+	// Empty when it cannot be determined statically; generators fall back to any.
+	ResultType string `json:"result_type,omitempty"`
 }
 
 // EntryType enumerates the supported config entry types.

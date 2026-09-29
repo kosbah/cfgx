@@ -63,6 +63,10 @@ type EntryIR struct {
 
     // List element type (List only)
     ElementType *EntryIR `json:"element_type,omitempty"`
+
+    // Computed result type (Computed only): the Go type T of Computed[T],
+    // e.g. "string", "time.Duration", "[]string" or "any". Empty when unknown.
+    ResultType string `json:"result_type,omitempty"`
 }
 
 // EntryType enumerates the supported config entry types.
@@ -104,6 +108,25 @@ type ValidatorIR struct {
     Params map[string]any `json:"params,omitempty"` // e.g. {"min":1024,"max":65535}
 }
 ```
+
+---
+
+### `result_type` (Computed entries)
+
+`ResultType` records the Go result type `T` of a `cfgx.Computed[T]` entry so that
+code generators can emit a typed getter (e.g. `DSN() string`).
+
+- `Schema.ToIR()` fills it from `T` via reflection: predeclared types by name
+  (`"string"`, `"int"`), `"time.Duration"`, composites such as `"[]string"`, and
+  `"any"` for the empty interface. Named types from other packages are rendered
+  package-qualified (e.g. `"mypkg.DSN"`).
+- The parser fills it from explicit type arguments (`cfgx.Computed[string](...)`)
+  or, when they are omitted, from the single result of the function literal
+  (`func(parent any) string`). A local alias of the `time` import is normalized
+  to `time`. If neither is available (e.g. the function is a named identifier),
+  it is left empty.
+- Generators must treat an empty or unsupported `ResultType` as `any`.
+- It is always empty for non-Computed entries.
 
 ---
 

@@ -69,7 +69,7 @@ func TestBuilderMethodsSetIR(t *testing.T) {
 			ir.EntryIR{ID: "db", Type: ir.TypeObject, Description: "database", Scope: []string{"serve"},
 				Tags: []string{"db"}, Properties: []ir.EntryIR{{ID: "host", Type: ir.TypeString}}}},
 		{"computed", Computed("dsn", func(any) string { return "" }).Desc("dsn").IsLive(),
-			ir.EntryIR{ID: "dsn", Type: ir.TypeComputed, Description: "dsn", IsLive: true, HasGetter: true}},
+			ir.EntryIR{ID: "dsn", Type: ir.TypeComputed, Description: "dsn", IsLive: true, HasGetter: true, ResultType: "string"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -186,6 +186,27 @@ func TestComputedIR(t *testing.T) {
 	}
 	if e.Default != nil {
 		t.Errorf("computed Default = %v, want nil", e.Default)
+	}
+}
+
+func TestComputedResultType(t *testing.T) {
+	type named struct{}
+	tests := []struct {
+		entry Entry
+		want  string
+	}{
+		{Computed("a", func(any) string { return "" }), "string"},
+		{Computed("b", func(any) int { return 0 }), "int"},
+		{Computed("c", func(any) time.Duration { return 0 }), "time.Duration"},
+		{Computed("d", func(any) []string { return nil }), "[]string"},
+		{Computed("e", func(any) any { return nil }), "any"},
+		{Computed("f", func(any) named { return named{} }), "cfgx.named"},
+		{Computed("g", func(any) error { return nil }), "error"},
+	}
+	for _, tt := range tests {
+		if got := tt.entry.toIR().ResultType; got != tt.want {
+			t.Errorf("%s: ResultType = %q, want %q", tt.entry.id(), got, tt.want)
+		}
 	}
 }
 

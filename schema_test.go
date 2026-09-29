@@ -422,3 +422,57 @@ func TestSensitiveMessagesRedacted(t *testing.T) {
 		})
 	}
 }
+
+func TestSchemaGetter(t *testing.T) {
+	s := Define(
+		String("plain"),
+		String("token").Getter(func() (string, error) { return "tok", nil }),
+		List("hosts", String("host")).Getter(func() ([]any, error) { return []any{"a"}, nil }),
+		Object("db", Int("port").Getter(func() (int, error) { return 5432, nil })),
+		Computed("dsn", func(any) string { return "d" }),
+	)
+	for _, key := range []string{"plain", "missing", "db", "db.missing", "plain.x", "dsn"} {
+		if g := s.Getter(key); g != nil {
+			t.Errorf("Getter(%q) = non-nil, want nil", key)
+		}
+	}
+	tests := []struct {
+		key  string
+		want any
+	}{
+		{"token", "tok"},
+		{"hosts", []any{"a"}},
+		{"db.port", 5432},
+	}
+	for _, tt := range tests {
+		g := s.Getter(tt.key)
+		if g == nil {
+			t.Fatalf("Getter(%q) = nil", tt.key)
+		}
+		got, err := g()
+		if err != nil || !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("Getter(%q)() = %#v, %v; want %#v", tt.key, got, err, tt.want)
+		}
+	}
+}
+
+func TestSchemaCompute(t *testing.T) {
+	type parent struct{ host string }
+	s := Define(
+		String("host"),
+		Object("db", Computed("dsn", func(p any) string { return "pg://" + p.(*parent).host })),
+		Computed("any", func(p any) any { return p }),
+	)
+	got, err := s.Compute("db.dsn", &parent{host: "h"})
+	if err != nil || got != "pg://h" {
+		t.Errorf("Compute(db.dsn) = %#v, %v; want \"pg://h\"", got, err)
+	}
+	if got, err := s.Compute("any", 7); err != nil || got != 7 {
+		t.Errorf("Compute(any) = %#v, %v; want 7", got, err)
+	}
+	for _, key := range []string{"host", "db", "missing", "db.missing"} {
+		if _, err := s.Compute(key, nil); err == nil {
+			t.Errorf("Compute(%q) error = nil, want non-nil", key)
+		}
+	}
+}

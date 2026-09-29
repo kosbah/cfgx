@@ -346,6 +346,14 @@ func (f *Field[T]) checkAny(vc *validation, path string, v any) {
 	}
 }
 
+func (f *Field[T]) getterAny() func() (any, error) {
+	if f.getter == nil {
+		return nil
+	}
+	g := f.getter
+	return func() (any, error) { return g() }
+}
+
 func (f *Field[T]) watch(path string, out *[]WatchEntry) {
 	if !f.isLive {
 		return
@@ -589,6 +597,14 @@ func (l *ListEntry) validate(vc *validation, path string) {
 	}
 }
 
+func (l *ListEntry) getterAny() func() (any, error) {
+	if l.getter == nil {
+		return nil
+	}
+	g := l.getter
+	return func() (any, error) { return g() }
+}
+
 func (l *ListEntry) watch(path string, out *[]WatchEntry) {
 	if !l.isLive {
 		return
@@ -735,8 +751,22 @@ func (c *ComputedEntry[T]) toIR() ir.EntryIR {
 	e := c.baseIR(ir.TypeComputed)
 	e.HasGetter = true
 	e.HasOnChange = c.onChange != nil
+	e.ResultType = resultTypeName[T]()
 	return e
 }
+
+// resultTypeName renders T as Go source for EntryIR.ResultType: predeclared
+// and time types by name, composites structurally, and "any" for the empty
+// interface.
+func resultTypeName[T any]() string {
+	t := reflect.TypeOf((*T)(nil)).Elem()
+	if t.Kind() == reflect.Interface && t.NumMethod() == 0 && t.PkgPath() == "" {
+		return "any"
+	}
+	return t.String()
+}
+
+func (c *ComputedEntry[T]) computeAny(parent any) any { return c.fn(parent) }
 
 func (c *ComputedEntry[T]) validate(*validation, string) {}
 

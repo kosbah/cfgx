@@ -150,6 +150,65 @@ func (s *Schema) WatcherEntries() []WatchEntry {
 	return out
 }
 
+// Getter returns the Getter function of the entry at key, a dot-separated path
+// such as "db.password", with its result boxed as any. It returns nil if there
+// is no such entry or the entry has no Getter. Computed entries have no Getter;
+// use Compute for them. Called by generated Load() functions.
+func (s *Schema) Getter(key string) func() (any, error) {
+	if g, ok := s.lookup(key).(getterEntry); ok {
+		return g.getterAny()
+	}
+	return nil
+}
+
+// Compute evaluates the Computed entry at key, a dot-separated path such as
+// "db.dsn", passing parent to its function. parent is the generated struct
+// that contains the entry (e.g. *DbConfig). Compute returns an error if key
+// does not name a Computed entry. Called by generated getters.
+func (s *Schema) Compute(key string, parent any) (any, error) {
+	e := s.lookup(key)
+	if c, ok := e.(computedEntry); ok {
+		return c.computeAny(parent), nil
+	}
+	if e == nil {
+		return nil, fmt.Errorf("cfgx: Compute: no entry %q", key)
+	}
+	return nil, fmt.Errorf("cfgx: Compute: entry %q is not a Computed entry", key)
+}
+
+// getterEntry is implemented by entries that may carry a Getter.
+type getterEntry interface {
+	getterAny() func() (any, error)
+}
+
+// computedEntry is implemented by Computed entries.
+type computedEntry interface {
+	computeAny(parent any) any
+}
+
+// lookup returns the entry at the dot-separated path key, or nil.
+func (s *Schema) lookup(key string) Entry {
+	entries := s.entries
+	for {
+		id, rest, nested := strings.Cut(key, ".")
+		var found Entry
+		for _, e := range entries {
+			if e.id() == id {
+				found = e
+				break
+			}
+		}
+		if found == nil || !nested {
+			return found
+		}
+		o, ok := found.(*ObjectEntry)
+		if !ok {
+			return nil
+		}
+		entries, key = o.properties, rest
+	}
+}
+
 func indexEntries(index map[string]Entry, entries []Entry, parent string) {
 	for _, e := range entries {
 		p := joinPath(parent, e.id())
