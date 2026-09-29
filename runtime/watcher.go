@@ -16,8 +16,10 @@ import (
 )
 
 // DefaultInterval is the env polling interval used when NewWatcher is given a
-// non-positive interval.
-const DefaultInterval = 5 * time.Second
+// non-positive interval; the watchers started by generated Load functions use
+// it. It is a variable so that programs and tests can shorten it. Set it
+// before calling NewWatcher or Load, never concurrently with them.
+var DefaultInterval = 5 * time.Second
 
 // WatchEntry describes a single IsLive config to be watched.
 // Generated code builds these from schema.WatcherEntries().

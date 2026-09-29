@@ -176,7 +176,9 @@ The generated code is mostly self-contained (typed structs, cobra registration, 
 However, runtime validators and IsLive watching require the original `Schema` value because
 they hold Go closures (`Validate`, `OnChange`, `Getter`) that cannot be serialized.
 Keeping the `Schema` at runtime means:
-- `Load()` calls `schema.Validate(v)` which invokes all registered validator functions
+- `Load()` calls `schema.ValidateScope(v, "")` (and `Load<Scope>()` calls
+  `schema.ValidateScope(v, "<scope>")`), which invokes the registered validator functions
+  of the entries in view for that command
 - The `Watcher` receives `WatchEntry` values from `schema.WatcherEntries()`, which include
   the `Getter` and `OnChange` closures
 

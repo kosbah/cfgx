@@ -24,6 +24,7 @@ type Item interface {
 type Entry interface {
 	Item
 	id() string
+	scopes() []string
 	toIR() ir.EntryIR
 	validate(vc *validation, path string)
 	watch(path string, out *[]WatchEntry)
@@ -60,6 +61,8 @@ type base struct {
 func (b *base) isItem() {}
 
 func (b *base) id() string { return b.entryID }
+
+func (b *base) scopes() []string { return b.scope }
 
 func (b *base) baseIR(t ir.EntryType) ir.EntryIR {
 	e := ir.EntryIR{
@@ -687,7 +690,11 @@ func (o *ObjectEntry) validate(vc *validation, path string) {
 		return
 	}
 	for _, p := range o.properties {
-		p.validate(vc, joinPath(path, p.id()))
+		pp := joinPath(path, p.id())
+		if vc.hidden[pp] {
+			continue
+		}
+		p.validate(vc, pp)
 	}
 }
 

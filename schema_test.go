@@ -476,3 +476,77 @@ func TestSchemaCompute(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateScope(t *testing.T) {
+	s := Define(
+		String("name").Required(),
+		Int("port").Required().Scope("serve"),
+		Object("db",
+			String("host").Required(),
+			String("replica").Required().Scope("serve"),
+		).Scope("serve", "migrate"),
+		Object("cache",
+			String("url").Required(),
+		).Scope("worker"),
+		Bool("json").Scope("serve"),
+		Bool("text"),
+		Bool("a"),
+		Bool("b"),
+		MutuallyExclusive("json", "text"),
+		MutuallyExclusive("a", "b"),
+	)
+	src := mapSource{"json": true, "text": true, "a": true, "b": true}
+	fields := func(err error) []string {
+		t.Helper()
+		if err == nil {
+			return nil
+		}
+		var ve *ValidationErrors
+		if !errors.As(err, &ve) {
+			t.Fatalf("error %v is not *ValidationErrors", err)
+		}
+		var out []string
+		for _, fe := range ve.Errors {
+			out = append(out, fe.Field)
+		}
+		return out
+	}
+	tests := []struct {
+		scope string
+		want  []string
+	}{
+		{"", []string{"name", "a, b"}},
+		{"serve", []string{"name", "port", "db.host", "db.replica", "json, text", "a, b"}},
+		{"migrate", []string{"name", "db.host", "a, b"}},
+		{"worker", []string{"name", "cache.url", "a, b"}},
+		{"other", []string{"name", "a, b"}},
+	}
+	for _, tt := range tests {
+		t.Run("scope="+tt.scope, func(t *testing.T) {
+			got := fields(s.ValidateScope(src, tt.scope))
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ValidateScope(%q) fields = %q, want %q", tt.scope, got, tt.want)
+			}
+		})
+	}
+	t.Run("Validate checks everything", func(t *testing.T) {
+		want := []string{"name", "port", "db.host", "db.replica", "cache.url", "json, text", "a, b"}
+		if got := fields(s.Validate(src)); !reflect.DeepEqual(got, want) {
+			t.Errorf("Validate fields = %q, want %q", got, want)
+		}
+	})
+	t.Run("valid", func(t *testing.T) {
+		ok := mapSource{"name": "x", "db.host": "h"}
+		if err := s.ValidateScope(ok, "migrate"); err != nil {
+			t.Errorf("ValidateScope(migrate) = %v, want nil", err)
+		}
+		if err := s.ValidateScope(ok, "serve"); err == nil {
+			t.Error("ValidateScope(serve) = nil, want port and db.replica errors")
+		}
+	})
+	t.Run("nil source", func(t *testing.T) {
+		if err := s.ValidateScope(nil, "serve"); err == nil {
+			t.Error("ValidateScope(nil) = nil, want error")
+		}
+	})
+}

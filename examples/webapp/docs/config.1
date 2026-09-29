@@ -1,0 +1,65 @@
+.\" webapp v0.0.0 2026-09-29
+.SH CONFIGURATION
+.SS General
+.TP
+.B APP_NAME
+Human\-readable application name. Default: webapp.
+.TP
+.B APP_DEBUG
+Enable debug logging; hot\-reloadable via APP_DEBUG. Default: false. Hot\-reloadable.
+.TP
+.B APP_JSON_OUTPUT
+Print machine\-readable JSON output.
+.TP
+.B APP_OUTPUT_FORMAT
+Output format. Default: text. One of: text, json.
+.TP
+.B APP_TEXT_OUTPUT
+Print human\-readable text output.
+.SS Server
+.TP
+.B APP_PORT
+HTTP port the server listens on. Default: 8080. Range: 1024\-65535.
+.TP
+.B APP_TLS_CERT
+Path to the TLS certificate (required when tls\-enabled=true). \fBREQUIRED.\fR
+.TP
+.B APP_TLS_ENABLED
+Enable TLS. Default: false.
+.SS Database
+.TP
+.B DB_HOST
+Database host. Default: localhost.
+.TP
+.B DB_NAME
+Database name. \fBREQUIRED.\fR
+.TP
+.B DB_PASSWORD
+Database password. \fBREQUIRED. SENSITIVE.\fR
+.TP
+.B DB_PORT
+Database port. Default: 5432. Range: 1\-65535.
+.TP
+.B DB_USER
+Database user. Default: postgres.
+.SS Email
+.TP
+.B EMAIL_ENABLED
+Send notification emails. Default: false.
+.TP
+.B SMTP_HOST
+SMTP server host. Default: localhost.
+.TP
+.B SMTP_PASSWORD
+SMTP password. \fBREQUIRED. SENSITIVE.\fR
+.TP
+.B SMTP_PORT
+SMTP server port. Default: 587. Range: 1\-65535.
+.TP
+.B SMTP_USER
+SMTP user. \fBREQUIRED.\fR
+.SS Deprecated
+.TP
+.B APP_LOG_FILE
+File to write logs to.
+.B "DEPRECATED: logs go to stderr; redirect them instead"

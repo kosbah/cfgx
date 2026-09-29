@@ -178,8 +178,9 @@ func BindViper(v *viper.Viper, schema *cfgx.Schema) {
 {{- range .Loads}}
 
 // {{.Func}} reads {{if .Scope}}the configuration for the {{quote .Scope}} command{{else}}the configuration shared by all commands{{end}} from v.
-// It validates all values with schema and returns a typed *{{.Type}}, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values {{if .Scope}}the {{quote .Scope}} command uses{{else}}shared by all commands{{end}} with schema and
+// returns a typed *{{.Type}}, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 {{- if .HasWatch}}
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
@@ -202,7 +203,7 @@ func {{.Func}}(schema *cfgx.Schema, v *viper.Viper) (*{{.Type}}, error) {
 {{- range .Computed}}
 	{{template "path" .}} = func() {{.F.GoType}} { return cfgxCompute[{{.F.GoType}}](schema, {{quote .F.Key}}, {{template "parent" .}}) }
 {{- end}}
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, {{quote .Scope}}); err != nil {
 		return nil, err
 	}
 {{- if .HasWatch}}

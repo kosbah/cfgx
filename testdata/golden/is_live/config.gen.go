@@ -134,8 +134,9 @@ func BindViper(v *viper.Viper, schema *cfgx.Schema) {
 }
 
 // Load reads the configuration shared by all commands from v.
-// It validates all values with schema and returns a typed *Config, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values shared by all commands with schema and
+// returns a typed *Config, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
 func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
@@ -154,7 +155,7 @@ func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 	cfg.limits.maxConns.Store(v.GetInt("limits.max-conns"))
 	cfg.legacyMode = v.GetString("legacy-mode")
 	cfg.limits.summary = func() string { return cfgxCompute[string](schema, "limits.summary", &cfg.limits) }
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, ""); err != nil {
 		return nil, err
 	}
 	live := cfgxLiveEntries(schema)
@@ -175,8 +176,9 @@ func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 }
 
 // LoadServe reads the configuration for the "serve" command from v.
-// It validates all values with schema and returns a typed *ServeConfig, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values the "serve" command uses with schema and
+// returns a typed *ServeConfig, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
 func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
@@ -196,7 +198,7 @@ func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
 	cfg.legacyMode = v.GetString("legacy-mode")
 	cfg.pollInterval.Store(v.GetDuration("poll-interval"))
 	cfg.limits.summary = func() string { return cfgxCompute[string](schema, "limits.summary", &cfg.limits) }
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, "serve"); err != nil {
 		return nil, err
 	}
 	live := cfgxLiveEntries(schema)

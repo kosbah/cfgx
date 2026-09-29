@@ -252,8 +252,9 @@ func BindViper(v *viper.Viper, schema *cfgx.Schema) {
 }
 
 // Load reads the configuration shared by all commands from v.
-// It validates all values with schema and returns a typed *Config, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values shared by all commands with schema and
+// returns a typed *Config, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
 func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
@@ -280,7 +281,7 @@ func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 	cfg.legacyHost = v.GetString("legacy_host")
 	cfg.hosts = v.GetStringSlice("hosts")
 	cfg.reportDir = v.GetString("report_dir")
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, ""); err != nil {
 		return nil, err
 	}
 	live := cfgxLiveEntries(schema)
@@ -297,8 +298,9 @@ func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 }
 
 // LoadServe reads the configuration for the "serve" command from v.
-// It validates all values with schema and returns a typed *ServeConfig, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values the "serve" command uses with schema and
+// returns a typed *ServeConfig, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
 func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
@@ -334,7 +336,7 @@ func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
 	cfg.db.pool.maxOpen = v.GetInt("db.pool.max_open")
 	cfg.db.pool.idleTimeout = v.GetDuration("db.pool.idle_timeout")
 	cfg.db.dsn = func() string { return cfgxCompute[string](schema, "db.dsn", &cfg.db) }
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, "serve"); err != nil {
 		return nil, err
 	}
 	live := cfgxLiveEntries(schema)
@@ -352,8 +354,9 @@ func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
 }
 
 // LoadMigrate reads the configuration for the "migrate" command from v.
-// It validates all values with schema and returns a typed *MigrateConfig, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values the "migrate" command uses with schema and
+// returns a typed *MigrateConfig, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 // It also starts a watcher that keeps the IsLive entries up to date; call
 // Close to stop it.
 func LoadMigrate(schema *cfgx.Schema, v *viper.Viper) (*MigrateConfig, error) {
@@ -388,7 +391,7 @@ func LoadMigrate(schema *cfgx.Schema, v *viper.Viper) (*MigrateConfig, error) {
 	cfg.db.pool.maxOpen = v.GetInt("db.pool.max_open")
 	cfg.db.pool.idleTimeout = v.GetDuration("db.pool.idle_timeout")
 	cfg.db.dsn = func() string { return cfgxCompute[string](schema, "db.dsn", &cfg.db) }
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, "migrate"); err != nil {
 		return nil, err
 	}
 	live := cfgxLiveEntries(schema)

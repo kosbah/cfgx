@@ -61,8 +61,9 @@ func BindViper(v *viper.Viper, schema *cfgx.Schema) {
 }
 
 // Load reads the configuration shared by all commands from v.
-// It validates all values with schema and returns a typed *Config, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values shared by all commands with schema and
+// returns a typed *Config, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 	cfg := &Config{}
 	cfg.apiKey = newSensitiveString(v.GetString("api_key"))
@@ -74,7 +75,7 @@ func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 		cfg.sessionSecret = newSensitiveString(val)
 	}
 	cfg.user = v.GetString("user")
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, ""); err != nil {
 		return nil, err
 	}
 	return cfg, nil

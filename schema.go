@@ -120,19 +120,48 @@ func (s *Schema) ToIR() *ir.SchemaIR {
 // first; a conversion failure is reported as a FieldError and that entry's
 // validators are skipped. Validators run only for entries that are set.
 //
+// Validate checks every entry regardless of its Scope; see ValidateScope to
+// check only the entries one command uses.
+//
 // Validate returns a *ValidationErrors holding every failure, or nil on success.
-// Called by generated Load() functions.
 func (s *Schema) Validate(v ValueSource) error {
+	return s.validate(v, nil)
+}
+
+// ValidateScope is like Validate but checks only the entries in view for the
+// command scope: entries without a Scope plus entries whose Scope includes
+// scope. An Object's Scope applies to all of its properties, and a property
+// with its own Scope must also include scope. With scope "" only the entries
+// without a Scope are checked. A MutuallyExclusive constraint is checked only
+// if all of its entries are in view.
+//
+// Called by generated Load functions: Load uses scope "" and Load<Scope> the
+// scope of its command.
+func (s *Schema) ValidateScope(v ValueSource, scope string) error {
+	return s.validate(v, &scope)
+}
+
+// validate runs a validation; a nil scope means every entry is in view.
+func (s *Schema) validate(v ValueSource, scope *string) error {
 	if v == nil {
 		return errors.New("cfgx: Validate called with nil ValueSource")
 	}
 	vc := &validation{src: v, index: map[string]Entry{}}
 	indexEntries(vc.index, s.entries, "")
+	if scope != nil {
+		vc.hidden = map[string]bool{}
+		hideOutOfScope(vc.hidden, s.entries, "", *scope, false)
+	}
 	for _, e := range s.entries {
+		if vc.hidden[e.id()] {
+			continue
+		}
 		e.validate(vc, e.id())
 	}
 	for _, c := range s.constraints {
-		vc.checkConstraint(c)
+		if vc.inView(c.ids...) {
+			vc.checkConstraint(c)
+		}
 	}
 	if len(vc.errs) == 0 {
 		return nil
@@ -219,11 +248,52 @@ func indexEntries(index map[string]Entry, entries []Entry, parent string) {
 	}
 }
 
+// hideOutOfScope records in hidden the path of every entry that is not in
+// view for scope: an entry whose Scope is set but does not include scope, and
+// everything below it. parentHidden marks entries whose parent is hidden.
+func hideOutOfScope(hidden map[string]bool, entries []Entry, parent, scope string, parentHidden bool) {
+	for _, e := range entries {
+		p := joinPath(parent, e.id())
+		h := parentHidden || !inScope(e.scopes(), scope)
+		if h {
+			hidden[p] = true
+		}
+		if o, ok := e.(*ObjectEntry); ok {
+			hideOutOfScope(hidden, o.properties, p, scope, h)
+		}
+	}
+}
+
+// inScope reports whether an entry with the given Scope list is in view for
+// scope. Entries without a Scope are always in view.
+func inScope(scopes []string, scope string) bool {
+	if len(scopes) == 0 {
+		return true
+	}
+	for _, s := range scopes {
+		if s == scope {
+			return true
+		}
+	}
+	return false
+}
+
 // validation carries state for a single Schema.Validate run.
 type validation struct {
-	src   ValueSource
-	index map[string]Entry
-	errs  []FieldError
+	src    ValueSource
+	index  map[string]Entry
+	hidden map[string]bool // paths of entries out of view; nil means all are in view
+	errs   []FieldError
+}
+
+// inView reports whether every one of the given paths is in view.
+func (vc *validation) inView(paths ...string) bool {
+	for _, p := range paths {
+		if vc.hidden[p] {
+			return false
+		}
+	}
+	return true
 }
 
 func (vc *validation) add(path, msg string) {

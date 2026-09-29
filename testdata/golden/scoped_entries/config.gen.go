@@ -77,39 +77,42 @@ func BindViper(v *viper.Viper, schema *cfgx.Schema) {
 }
 
 // Load reads the configuration shared by all commands from v.
-// It validates all values with schema and returns a typed *Config, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values shared by all commands with schema and
+// returns a typed *Config, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 func Load(schema *cfgx.Schema, v *viper.Viper) (*Config, error) {
 	cfg := &Config{}
 	cfg.verbose = v.GetBool("verbose")
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, ""); err != nil {
 		return nil, err
 	}
 	return cfg, nil
 }
 
 // LoadServe reads the configuration for the "serve" command from v.
-// It validates all values with schema and returns a typed *ServeConfig, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values the "serve" command uses with schema and
+// returns a typed *ServeConfig, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 func LoadServe(schema *cfgx.Schema, v *viper.Viper) (*ServeConfig, error) {
 	cfg := &ServeConfig{}
 	cfg.verbose = v.GetBool("verbose")
 	cfg.port = v.GetInt("port")
 	cfg.db.url = v.GetString("db.url")
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, "serve"); err != nil {
 		return nil, err
 	}
 	return cfg, nil
 }
 
 // LoadMigrate reads the configuration for the "migrate" command from v.
-// It validates all values with schema and returns a typed *MigrateConfig, the
-// error of a failing Getter, or a *cfgx.ValidationErrors.
+// It validates the values the "migrate" command uses with schema and
+// returns a typed *MigrateConfig, the error of a failing Getter, or a
+// *cfgx.ValidationErrors.
 func LoadMigrate(schema *cfgx.Schema, v *viper.Viper) (*MigrateConfig, error) {
 	cfg := &MigrateConfig{}
 	cfg.verbose = v.GetBool("verbose")
 	cfg.db.url = v.GetString("db.url")
-	if err := schema.Validate(v); err != nil {
+	if err := schema.ValidateScope(v, "migrate"); err != nil {
 		return nil, err
 	}
 	return cfg, nil
