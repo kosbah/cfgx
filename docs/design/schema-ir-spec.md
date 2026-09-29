@@ -117,7 +117,7 @@ type ValidatorIR struct {
 | `cfgx.PortRange(min, max)` | `"port_range"` | `{"min": 1024, "max": 65535}` |
 | `cfgx.Base64()` | `"base64"` | `{}` |
 | `cfgx.Regex(pattern)` | `"regex"` | `{"pattern": "^[a-z]+$"}` |
-| `cfgx.Duration()` | `"duration"` | `{}` |
+| `cfgx.DurationValidator()` | `"duration"` | `{}` |
 | `cfgx.Semver()` | `"semver"` | `{}` |
 | `cfgx.Enum(vals...)` | `"enum"` | `{"values": ["text","json"]}` |
 | `cfgx.Range(min, max)` | `"range"` | `{"min": 0.0, "max": 100.0}` |
